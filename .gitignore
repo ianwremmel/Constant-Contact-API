@@ -1,2 +1,9 @@
+# Eclipse/Aptana Files
 .project
 .settings
+
+# OSX Files
+.DS_Store
+
+# Config Values
+tests/config.php
