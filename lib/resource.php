@@ -86,7 +86,60 @@ abstract class Resource implements ICrud{
 
 		curl_setopt($ch, CURLOPT_HTTPGET, TRUE);
 
-		$this->execute($ch, 200);
+		$response = $this->execute($ch, 200);
+
+		$xml = new SimpleXMLElement($response);
+		if ($xml->getName() === 'feed') {
+			// TODO ensure there is only one <entry>
+			$xml = $xml->entry;
+		}
+
+		// Since we may have retrieved the resource with an email address, make
+		// sure we assign the appropriate id
+		$id = self::extractIdFromString($xml->id);
+		// $id is typically numeric, but certain special lists are identified by
+		// strings.
+		if (is_numeric($id)) {
+			$id = intval($id);
+		}
+		$this->setId($id);
+
+		// turn xml into an array
+		$xml = json_decode(json_encode($xml), true);
+
+
+		foreach ($xml['content'][$this->objectType] as $key => $value) {
+			// Skip the attributes element;
+			if ($key === '@attributes') {
+				continue;
+			}
+			if (is_array($value)) {
+				// Empty arrays indicate null values
+				if (empty($value)) {
+					call_user_func(array($this, 'set' . $key), NULL);
+				}
+				else {
+					foreach ($value as $item) {
+						call_user_func(array($this, 'add' . $this->itemNodeNames[$key]), $item);
+					}
+				}
+			}
+			else {
+				call_user_func(array($this, 'set' . $key), $value);
+			}
+		}
+
+		// $objectType = $this->objectType;
+		// $object = $xml->content->$objectType;
+		// print_r($object);
+		// // foreach ($object->Contact as $key => $value) {
+			// // print 'key:' . $key;
+			// // print PHP_EOL;
+			// // print 'value:' . $value;
+			// // print PHP_EOL;
+			// // print PHP_EOL;
+		// // }
+		// print self::prettyPrintXml($object->asXML());
 
 		// if id is set, will get a single item. otherwise, will get all items
 	}
@@ -124,7 +177,12 @@ abstract class Resource implements ICrud{
 		// interacting with it explicitly and it always needs to be part of the
 		// URL
 		if (!is_null($this->getId())) {
-			$url .= '/' . $this->getId();
+			$id = $this->getId();
+			if ($id{0} !== '?') {
+				$url .= '/';
+			}
+
+			$url .= $id;
 		}
 
 		// Initialize the cURL session
@@ -154,9 +212,13 @@ abstract class Resource implements ICrud{
 		$info = curl_getinfo($ch);
 		$error = curl_error($ch);
 
-		curl_close($ch);
+		// curl_close($ch);
 
 		if ($info['http_code'] != $expectedCode) {
+			print_r($response);
+			print_r($info);
+			print_r($error);
+
 			throw new UnexpectedValueException("Response code ${info['http_code']} did not match ${expectedCode}.\nServer responded with message: ${error}\n");
 		}
 

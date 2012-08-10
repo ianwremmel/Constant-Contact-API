@@ -87,9 +87,27 @@ class ContactResource extends Resource {
 		parent::create();
 	}
 
-	// public function retrieve() {
-//
-	// }
+	/**
+	 * Retries a contact by email address or id.  Note: if using email address,
+	 * two calls will be made to Constant Contact.
+	 */
+	public function retrieve() {
+		if (is_null($this->getId())) {
+			if (is_null($this->getEmailAddress())) {
+				throw new RuntimeException('Id or EmailAddress must be set before calling retrieve().');
+			}
+			else {
+				$this->setId('?email=' . $this->getEmailAddress());
+				// If we're retrieving by email, we'll only get a partial
+				// response, so we do an initial retrieval here to get the id.
+				// and then we'll let the id-based retrieval occur as nromal
+				// below.
+				parent::retrieve();
+			}
+		}
+
+		parent::retrieve();
+	}
 //
 	// public function update() {
 //
@@ -98,4 +116,11 @@ class ContactResource extends Resource {
 	// public function delete() {
 //
 	// }
+	/*************************************************************************\
+	 * RETRIEVAL PROCESSING FUNCTIONS
+	\*************************************************************************/
+	protected function addContactList($item) {
+		$id = self::extractIdFromString($item['@attributes']['id']);
+		$this->addList($id);
+	}
 }
