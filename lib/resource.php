@@ -3,6 +3,26 @@
 require_once 'crud_interface.php';
 
 abstract class Resource implements ICrud{
+	const ACTION_BY_CUSTOMER = 'ACTION_BY_CUSTOMER';
+	const ACTION_BY_CONTACT = 'ACTION_BY_CONTACT';
+
+	public static function prettyPrintXml($xml) {
+		$dom = @DOMDocument::loadXML($xml);
+		if (!empty($dom)) {
+			$dom->formatOutput = TRUE;
+			return $dom->saveXML();
+		}
+	}
+
+	public static function generateIdString($endpoint, $id) {
+		return 'http://' . CC_API_URL . '/' . CC_API_USERNAME . '/' . $endpoint . '/' . $id;
+	}
+
+	public static function extractIdFromString($idString) {
+		$offset = strrpos($idString, '/') + 1;
+		$id = substr($idString, $offset);
+		return $id;
+	}
 
 	protected $data = array();
 
@@ -30,14 +50,8 @@ abstract class Resource implements ICrud{
 	}
 
 	public function __construct() {
-
-	}
-	public static function prettyPrintXml($xml) {
-		$dom = @DOMDocument::loadXML($xml);
-		if (!empty($dom)) {
-			$dom->formatOutput = TRUE;
-			return $dom->saveXML();
-		}
+		// exists so that all derived classes can call parent::__construct to
+		// for future-proofing.
 	}
 
 	public function create() {
@@ -50,52 +64,21 @@ abstract class Resource implements ICrud{
 		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
 		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/atom+xml'));
 
-		$entry = new SimpleXMLElement('<entry></entry>');
-		$entry->addAttribute('xmlns', 'http://www.w3.org/2005/Atom');
+		$xml = $this->__toXml();
 
-		$title = $entry->addChild('title', ' ');//, $this->objectType . ': ' . $this->getEmailAddress());
-		$title->addAttribute('type', 'text');
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $xml);
 
-		// $updated = $entry->addChild('updated', date(DATE_ATOM));
-		$updated = $entry->addChild('updated', '2008-07-23T14:21:06.407Z');
+		$response = $this->execute($ch, 201);
 
-		$entry->addChild('author', ' ');
-		$entry->addChild('id', 'date: ,none');
+		$xml = new SimpleXMLElement($response);
+		$id = self::extractIdFromString($xml->id);
 
-		$entry->addChild('summary', $this->objectType)->addAttribute('type', 'text');
-
-
-		$content = $entry->addChild('content');
-		$content->addAttribute('type', 'application/vnd.ctct+xml');
-		$object = $content->addChild($this->objectType);
-		$object->addAttribute('xmlns', 'http://ws.constantcontact.com/ns/1.0/');
-
-
-		if (!is_null($this->getId())) {
-			$object->addAttribute('id', 'http://' . CC_API_URL . '/' . CC_API_USERNAME . '/' . $this->endpoint . '/' . $this->getId());
+		// $id is typically numeric, but certain special lists are identified by
+		// strings.
+		if (is_numeric($id)) {
+			$id = intval($id);
 		}
-
-		foreach ($this->data as $key => $value) {
-			if (is_array($value)) {
-				$children = $object->addChild($key);
-				foreach ($value as $item) {
-					// TODO can't have 'ContactList' below
-					$child = $children->addChild('ContactList');
-					$child->addAttribute('id', $item);
-				}
-			}
-			else if (is_object($value)) {
-			}
-			else {
-				$child = $object->addChild($key, $value);
-			}
-		}
-
-		$postFields = $entry->asXML();
-		print self::prettyPrintXml($postFields);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
-
-		$this->execute($ch);
+		$this->setId($id);
 	}
 
 	public function retrieve() {
@@ -103,7 +86,7 @@ abstract class Resource implements ICrud{
 
 		curl_setopt($ch, CURLOPT_HTTPGET, TRUE);
 
-		$this->execute($ch);
+		$this->execute($ch, 200);
 
 		// if id is set, will get a single item. otherwise, will get all items
 	}
@@ -116,7 +99,9 @@ abstract class Resource implements ICrud{
 		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
 		curl_setopt($ch, CURLOPT_HTTPHEADER, 'ContentType: application/atom+xml');
 
-		$this->execute($ch);
+		// 204: No Content indicates success but no need to send a response
+		// from the server.
+		$this->execute($ch, 204);
 	}
 
 	public function delete() {
@@ -125,9 +110,10 @@ abstract class Resource implements ICrud{
 		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
 		curl_setopt($ch, CURLOPT_HTTPHEADER, 'ContentType: text/html');
 
-		$this->execute($ch);
+		// 204: No Content indicates success but no need to send a response
+		// from the server.
+		$this->execute($ch, 204);
 	}
-
 
 	/**
 	 * Common code for setting up a cURL session
@@ -158,23 +144,72 @@ abstract class Resource implements ICrud{
 		// to reverse this option.
 		curl_setopt($ch, CURLOPT_HEADER, FALSE);
 
-		// curl_setopt($ch, CURLOPT_FAILONERROR, TRUE);
+		curl_setopt($ch, CURLOPT_FAILONERROR, TRUE);
 
 		return $ch;
 	}
 
-	protected function execute($ch) {
+	protected function execute($ch, $expectedCode = 200) {
 		$response = curl_exec($ch);
 		$info = curl_getinfo($ch);
 		$error = curl_error($ch);
 
 		curl_close($ch);
 
-		print "response\n";
-		print_r($response);
-		print "info\n";
-		print_r($info);
-		print "error\n";
-		print_r($error);
+		if ($info['http_code'] != $expectedCode) {
+			throw new UnexpectedValueException("Response code ${info['http_code']} did not match ${expectedCode}.\nServer responded with message: ${error}\n");
+		}
+
+		return $response;
+	}
+
+	public function __toXml() {
+		$entry = new SimpleXMLElement('<entry/>');
+		$entry->addAttribute('xmlns', 'http://www.w3.org/2005/Atom');
+
+		$title = $entry->addChild('title')->addAttribute('type', 'text');
+
+		$updated = $entry->addChild('updated', date(DATE_ATOM));
+
+		$author = $entry->addChild('author');
+
+		$summary = $entry->addChild('summary', $this->objectType);
+		$summary->addAttribute('type', 'text');
+
+		$content = $entry->addChild('content');
+		$content->addAttribute('type', 'application/vnd.ctct+xml'); //XXX
+
+		$object = $content->addChild($this->objectType);
+		$object->addAttribute('xmlns', 'http://ws.constantcontact.com/ns/1.0/');
+
+		if (is_null($this->getId())) {
+			$id = $entry->addChild('id', 'data:,none');
+		}
+		else {
+			$idString = self::generateIdString($this->endpoint, $this->getId());
+
+			$object->addAttribute('id', $idString);
+			$id = $entry->addChild('id', $idString);
+		}
+
+		foreach ($this->data as $key => $value) {
+			if (is_array($value)) {
+				$children = $object->addChild($key);
+
+				$itemNodeName = $this->itemNodeNames[$key];
+
+				foreach ($value as $item) {
+					$child = $children->addChild($itemNodeName); //XXX
+					$child->addAttribute('id', $item);
+				}
+			}
+			else if (is_object($value)) {
+			}
+			else {
+				$child = $object->addChild($key, $value);
+			}
+		}
+
+		return $entry->asXML();
 	}
 }

@@ -6,24 +6,15 @@ require_once 'config.php';
 class ContactResourceTest extends PHPUnit_Framework_TestCase {
 
 	protected function makeEmailAddress() {
-		return 'test-' . date(DateTime::W3C) . '@mailinator.com';
+		return 'test-' . time() . '@mailinator.com';
 	}
 
 	public function testCreate() {
 		$cr = new ContactResource();
 		$cr->setEmailAddress($this->makeEmailAddress());
+		$cr->addList(1);
 		$cr->create();
 
-		$this->assertFalse(is_null($cr->getId()));
-	}
-
-	public function testCreateWithList() {
-		$cr = new ContactResource();
-		$cr->setEmailAddress($this->makeEmailAddress());
-		$cr->addList('test list');
-		$cr->create();
-
-		// TODO need assertion to verify contact in CC is on list
 		$this->assertFalse(is_null($cr->getId()));
 	}
 
@@ -50,6 +41,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 
 		$cr = new ContactResource();
 		$cr->setEmailAddress($oldAddress);
+		$cr->addList(1);
 		$cr->create();
 
 		$newAddress = $this->makeEmailAddress();
@@ -69,6 +61,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 
 		$cr = new ContactResource();
 		$cr->setEmailAddress($address);
+		$cr->addList(1);
 		$cr->create();
 
 		$cr->addList('test list');
@@ -86,6 +79,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 
 		$cr = new ContactResource();
 		$cr->setEmailAddress($address);
+		$cr->addList(1);
 		$cr->create();
 
 		$cr->addList('test list');
@@ -112,6 +106,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 
 		$cr = new ContactResource();
 		$cr->setEmailAddress($address);
+		$cr->addList(1);
 		$cr->create();
 
 		$id = $cr->getId();
