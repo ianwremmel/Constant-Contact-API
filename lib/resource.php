@@ -62,10 +62,9 @@ abstract class Resource implements ICrud{
 		// to use CURLOPT_CUSTOMREQUEST since they are
 		// application/atom+xml.
 		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/atom+xml'));
 
 		$xml = $this->__toXml();
-
+		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/atom+xml'));
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $xml);
 
 		$response = $this->execute($ch, 201);
@@ -89,59 +88,80 @@ abstract class Resource implements ICrud{
 		$response = $this->execute($ch, 200);
 
 		$xml = new SimpleXMLElement($response);
+		// If we retrieved by a secondary identifier (e.g. email address), we
+		// need to do some extra tweeks.
 		if ($xml->getName() === 'feed') {
 			// TODO ensure there is only one <entry>
+
+			// First, the entry is a child of the main object rather than the
+			// main object
 			$xml = $xml->entry;
-		}
 
-		// Since we may have retrieved the resource with an email address, make
-		// sure we assign the appropriate id
-		$id = self::extractIdFromString($xml->id);
-		// $id is typically numeric, but certain special lists are identified by
-		// strings.
-		if (is_numeric($id)) {
-			$id = intval($id);
-		}
-		$this->setId($id);
-
-		// turn xml into an array
-		$xml = json_decode(json_encode($xml), true);
-
-
-		foreach ($xml['content'][$this->objectType] as $key => $value) {
-			// Skip the attributes element;
-			if ($key === '@attributes') {
-				continue;
+			// Then, make sure we use the primary id from here on out
+			$id = self::extractIdFromString($xml->id);
+			// $id is typically numeric, but certain special lists are
+			// identified by strings.
+			if (is_numeric($id)) {
+				$id = intval($id);
 			}
-			if (is_array($value)) {
-				// Empty arrays indicate null values
-				if (empty($value)) {
-					call_user_func(array($this, 'set' . $key), NULL);
-				}
-				else {
-					foreach ($value as $item) {
-						call_user_func(array($this, 'add' . $this->itemNodeNames[$key]), $item);
+			$this->setId($id);
+		}
+
+		// Simple XML is is easy to manipulate, but not so easy to traverse, so
+		// we'll use this little hack to get it into a form that's easier to
+		// work with programmatically.
+		$xmlArray = json_decode(json_encode($xml), TRUE);
+
+		// Iterate over each field in the <content> object of the response
+		foreach ($xmlArray['content'][$this->objectType] as $key => $value) {
+			// We don't care about the node's attributes but everything else
+			// is valuable.
+			if ($key !== '@attributes') {
+				if (is_array($value)) {
+					// If value is empty, we need to unset something, but we're
+					// we don't know for certain if that something is an array
+					// or a scalar.
+					if (empty($value)) {
+						// If $key is in $this->itemNodeNames, then we know it
+						// is a field that we expect to be an array and we need
+						// to set it as an empty array.
+						if (in_array($key, $this->itemNodeNames)) {
+							$this->data[$key] = array();
+						}
+						// But if we aren't expecting it to be an array, we can
+						// unset it.
+						else {
+							unset($this->data[$key]);
+						}
+					}
+					else {
+						// first, we need to remove any items that may already
+						// exist for this node in the data array.
+						call_user_func(array($this, 'set' . $key), array());
+
+						$singular = $this->itemNodeNames[$key];
+
+						// Due to the way the JSON hack detects true arrays (
+						// e.g. numerically-indexed arrays), the only way to
+						// figure out if the child contains a singular item is
+						// to determine if the array is numerically indexed.
+						if (self::is_assoc($value[$singular])) {
+							// single item
+							call_user_func(array($this, 'add'. $singular), $value[$singular]);
+						}
+						else {
+							// item list
+							foreach ($value[$singular] as $item) {
+								call_user_func(array($this, 'add'. $singular), $item);
+							}
+						}
 					}
 				}
-			}
-			else {
-				call_user_func(array($this, 'set' . $key), $value);
+				else {
+					call_user_func(array($this, 'set' . $key), $value);
+				}
 			}
 		}
-
-		// $objectType = $this->objectType;
-		// $object = $xml->content->$objectType;
-		// print_r($object);
-		// // foreach ($object->Contact as $key => $value) {
-			// // print 'key:' . $key;
-			// // print PHP_EOL;
-			// // print 'value:' . $value;
-			// // print PHP_EOL;
-			// // print PHP_EOL;
-		// // }
-		// print self::prettyPrintXml($object->asXML());
-
-		// if id is set, will get a single item. otherwise, will get all items
 	}
 
 	public function update() {
@@ -150,7 +170,11 @@ abstract class Resource implements ICrud{
 		// PUT via a custom request so that we don't need to use a file
 		// resource
 		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
-		curl_setopt($ch, CURLOPT_HTTPHEADER, 'ContentType: application/atom+xml');
+
+		$xml = $this->__toXml();
+		print_r(self::prettyPrintXml($xml));
+		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/atom+xml'));
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $xml);
 
 		// 204: No Content indicates success but no need to send a response
 		// from the server.
@@ -161,7 +185,6 @@ abstract class Resource implements ICrud{
 		$ch = $this->twist();
 
 		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
-		curl_setopt($ch, CURLOPT_HTTPHEADER, 'ContentType: text/html');
 
 		// 204: No Content indicates success but no need to send a response
 		// from the server.
@@ -215,9 +238,15 @@ abstract class Resource implements ICrud{
 		// curl_close($ch);
 
 		if ($info['http_code'] != $expectedCode) {
+			print PHP_EOL;
+			print 'response => ' . PHP_EOL;
 			print_r($response);
+			print 'info => ' . PHP_EOL;
 			print_r($info);
+			print 'error => ' . PHP_EOL;
 			print_r($error);
+
+			print PHP_EOL;
 
 			throw new UnexpectedValueException("Response code ${info['http_code']} did not match ${expectedCode}.\nServer responded with message: ${error}\n");
 		}
@@ -273,5 +302,9 @@ abstract class Resource implements ICrud{
 		}
 
 		return $entry->asXML();
+	}
+
+	static function is_assoc($array) {
+		return (bool)count(array_filter(array_keys($array), 'is_string'));
 	}
 }
