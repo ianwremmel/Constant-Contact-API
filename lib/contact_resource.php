@@ -19,6 +19,12 @@ class ContactResource extends Resource {
 	}
 
 	public function addList($list) {
+		// TODO add do-not-email list here too
+		if ($list === 'removed') {
+			$this->setLists(array());
+		}
+
+
 		// TODO ensure $list is not a full URI
 
 		$list = $this->_listIdToString($list);
@@ -113,9 +119,23 @@ class ContactResource extends Resource {
 //
 	// }
 //
-	// public function delete() {
-//
-	// }
+	/**
+	 * @var boolean $permanent If true, will move the contact to the Do Not
+	 * Email list.  Once on this list, contacts cannot be readded to any list.
+	 * If false, they will be added to the Removed list which can be undone.
+	 */
+	public function delete($permanent = FALSE) {
+		if ($permanent) {
+			parent::delete();
+		}
+		else {
+			$this->addList('removed');
+			$this->update();
+			print_r($this);
+			exit();
+		}
+	}
+
 	/*************************************************************************\
 	 * RETRIEVAL PROCESSING FUNCTIONS
 	\*************************************************************************/
