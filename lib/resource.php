@@ -101,18 +101,28 @@ abstract class Resource implements ICrud{
 		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/atom+xml'));
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $xml);
 
-		$response = $this->execute($ch, 201);
+		try {
+			$response = $this->execute($ch, 201);
 
-		$xml = new SimpleXMLElement($response);
-		// TODO do we need to do additional processing on the XML object?
-		$id = self::extractIdFromString($xml->id);
+			$xml = new SimpleXMLElement($response);
+			// TODO do we need to do additional processing on the XML object?
+			$id = self::extractIdFromString($xml->id);
 
-		// $id is typically numeric, but certain special lists are identified by
-		// strings.
-		if (is_numeric($id)) {
-			$id = intval($id);
+			// $id is typically numeric, but certain special lists are identified by
+			// strings.
+			if (is_numeric($id)) {
+				$id = intval($id);
+			}
+			$this->setId($id);
 		}
-		$this->setId($id);
+		catch (UnexpectedValueException $e) {
+			print PHP_EOL;
+			print $xml;
+			print PHP_EOL;
+			print self::prettyPrintXml($xml);
+			print PHP_EOL;
+			throw $e;
+		}
 	}
 
 	public function retrieve() {
@@ -170,27 +180,34 @@ abstract class Resource implements ICrud{
 						}
 					}
 					else {
-						// first, we need to remove any items that may already
-						// exist for this node in the data array.
-						call_user_func(array($this, 'set' . $key), array());
-
-						$singular = $this->itemNodeNames[$key];
-
-						// Due to the way the JSON hack detects true arrays (
-						// e.g. numerically-indexed arrays), the only way to
-						// figure out if the child contains a singular item is
-						// to determine if the array is numerically indexed.
-						// Assumption: all lists store URIs
-						if (self::is_assoc($value[$singular])) {
-							// single item
-							$uri = $value[$singular]['@attributes']['id'];
-							call_user_func(array($this, 'add'. $singular), $uri);
+						// We still might be in a single valued item
+						if (count($value) === 1 && array_key_exists('@attributes', $value)) {
+							call_user_func(array($this, 'set' . $key), $value['@attributes']['id']);
 						}
+						// but if not, we need to parse $value as an array
 						else {
-							// item list
-							foreach ($value[$singular] as $item) {
-								$uri = $item['@attributes']['id'];
+							// first, we need to remove any items that may already
+							// exist for this node in the data array.
+							call_user_func(array($this, 'set' . $key), array());
+
+							$singular = $this->itemNodeNames[$key];
+
+							// Due to the way the JSON hack detects true arrays (
+							// e.g. numerically-indexed arrays), the only way to
+							// figure out if the child contains a singular item is
+							// to determine if the array is numerically indexed.
+							// Assumption: all lists store URIs
+							if (self::is_assoc($value[$singular])) {
+								// single item
+								$uri = $value[$singular]['@attributes']['id'];
 								call_user_func(array($this, 'add'. $singular), $uri);
+							}
+							else {
+								// item list
+								foreach ($value[$singular] as $item) {
+									$uri = $item['@attributes']['id'];
+									call_user_func(array($this, 'add'. $singular), $uri);
+								}
 							}
 						}
 					}
