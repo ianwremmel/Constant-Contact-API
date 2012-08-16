@@ -121,7 +121,7 @@ abstract class Resource implements ICrud{
 					// If value is empty, we need to unset something, but we're
 					// we don't know for certain if that something is an array
 					// or a scalar.
-					if (empty($value)) {
+					if (empty($value) || (!self::is_assoc($value) && trim($value[0]) === '')) {
 						// If $key is in $this->itemNodeNames, then we know it
 						// is a field that we expect to be an array and we need
 						// to set it as an empty array.
