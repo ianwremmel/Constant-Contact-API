@@ -101,28 +101,18 @@ abstract class Resource implements ICrud{
 		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/atom+xml'));
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $xml);
 
-		try {
-			$response = $this->execute($ch, 201);
+		$response = $this->execute($ch, 201);
 
-			$xml = new SimpleXMLElement($response);
-			// TODO do we need to do additional processing on the XML object?
-			$id = self::extractIdFromString($xml->id);
+		$xml = new SimpleXMLElement($response);
+		// TODO do we need to do additional processing on the XML object?
+		$id = self::extractIdFromString($xml->id);
 
-			// $id is typically numeric, but certain special lists are identified by
-			// strings.
-			if (is_numeric($id)) {
-				$id = intval($id);
-			}
-			$this->setId($id);
+		// $id is typically numeric, but certain special lists are identified by
+		// strings.
+		if (is_numeric($id)) {
+			$id = intval($id);
 		}
-		catch (UnexpectedValueException $e) {
-			print PHP_EOL;
-			print $xml;
-			print PHP_EOL;
-			print self::prettyPrintXml($xml);
-			print PHP_EOL;
-			throw $e;
-		}
+		$this->setId($id);
 	}
 
 	public function retrieve() {
@@ -290,20 +280,15 @@ abstract class Resource implements ICrud{
 		$info = curl_getinfo($ch);
 		$error = curl_error($ch);
 
-		// curl_close($ch);
+		curl_close($ch);
 
 		if ($info['http_code'] != $expectedCode) {
-			print PHP_EOL;
-			print 'response => ' . PHP_EOL;
-			print_r($response);
-			print 'info => ' . PHP_EOL;
-			print_r($info);
-			print 'error => ' . PHP_EOL;
-			print_r($error);
+			$e = new UnexpectedValueException("Response code ${info['http_code']} did not match ${expectedCode}.");
+			$e->response = $response;
+			$e->error = $error;
+			$e->info = $info;
 
-			print PHP_EOL;
-
-			throw new UnexpectedValueException("Response code ${info['http_code']} did not match ${expectedCode}.\nServer responded with message: ${error}\n");
+			throw $e;
 		}
 
 		return $response;
