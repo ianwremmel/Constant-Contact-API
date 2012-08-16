@@ -115,40 +115,30 @@ abstract class Resource implements ICrud{
 		$this->setId($id);
 	}
 
-	public function retrieve() {
-		$ch = $this->twist();
-
-		curl_setopt($ch, CURLOPT_HTTPGET, TRUE);
-
-		$response = $this->execute($ch, 200);
-
-		$xml = new SimpleXMLElement($response);
-		// If we retrieved by a secondary identifier (e.g. email address), we
-		// need to do some extra tweeks.
-		if ($xml->getName() === 'feed') {
-			// TODO ensure there is only one <entry>
-
-			// First, the entry is a child of the main object rather than the
-			// main object
-			$xml = $xml->entry;
-
-			// Then, make sure we use the primary id from here on out
-			$id = self::extractIdFromString($xml->id);
-			// $id is typically numeric, but certain special lists are
-			// identified by strings.
-			if (is_numeric($id)) {
-				$id = intval($id);
-			}
-			$this->setId($id);
+	/**
+	 * @param SimpleXMLElement $xml
+	 */
+	public function createFromXml(SimpleXMLElement $xml) {
+		// Then, make sure we use the primary id from here on out
+		$id = self::extractIdFromString($xml->id);
+		// $id is typically numeric, but certain special lists are
+		// identified by strings.
+		if (is_numeric($id)) {
+			$id = intval($id);
 		}
+		$this->setId($id);
 
 		// Simple XML is is easy to manipulate, but not so easy to traverse, so
 		// we'll use this little hack to get it into a form that's easier to
 		// work with programmatically.
 		$xmlArray = json_decode(json_encode($xml), TRUE);
 
+		// We can't generically predict the child of $xmlArray['content'], but
+		// we can assume there will only be one child
+		$childOfContent = array_pop($xmlArray['content']);
+
 		// Iterate over each field in the <content> object of the response
-		foreach ($xmlArray['content'][$this->objectType] as $key => $value) {
+		foreach ($childOfContent as $key => $value) {
 			// We don't care about the node's attributes but everything else
 			// is valuable.
 			if ($key !== '@attributes') {
@@ -209,6 +199,28 @@ abstract class Resource implements ICrud{
 		}
 	}
 
+	public function retrieve() {
+		$ch = $this->twist();
+
+		curl_setopt($ch, CURLOPT_HTTPGET, TRUE);
+
+		$response = $this->execute($ch, 200);
+
+		$xml = new SimpleXMLElement($response);
+
+		// If we retrieved by a secondary identifier (e.g. email address), we
+		// need to do some extra tweeks.
+		if ($xml->getName() === 'feed') {
+			// TODO ensure there is only one <entry>
+
+			// First, the entry is a child of the main object rather than the
+			// main object
+			$xml = $xml->entry;
+		}
+
+		$this->createFromXml($xml);
+	}
+
 	public function update() {
 		$ch = $this->twist();
 
@@ -238,8 +250,9 @@ abstract class Resource implements ICrud{
 
 	/**
 	 * Common code for setting up a cURL session
+	 * @param string $urlSuffix suffix to append to the URL after the id (if it exists) is appended.  Used by ContactListResource::members and ContactResource::events
 	 */
-	protected function twist() {
+	protected function twist($urlSuffix = NULL) {
 		$url = 'https://' . CC_API_URL . '/' . CC_API_USERNAME . '/' . $this->endpoint;
 		// Assumption: if the resource already has an ID, then we'll be
 		// interacting with it explicitly and it always needs to be part of the
@@ -251,6 +264,10 @@ abstract class Resource implements ICrud{
 			}
 
 			$url .= $id;
+		}
+
+		if (!is_null($urlSuffix)) {
+			$url .= '/' . $urlSuffix;
 		}
 
 		// Initialize the cURL session

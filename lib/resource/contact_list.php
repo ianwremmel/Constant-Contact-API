@@ -30,4 +30,18 @@ class ContactListResource extends Resource {
 				throw UnexpectedValueException();
 		}
 	}
+
+	public function members() {
+		$ch = $this->twist('members');
+		$response = $this->execute($ch);
+		$xml = new SimpleXMLElement($response);
+		$xmlArray = json_decode(json_encode($xml));
+		print_r($xml);
+
+		foreach ($xml->entry as $entry) {
+			print_r($entry);
+			exit();
+			print $entry->id . PHP_EOL;
+		}
+	}
 }
