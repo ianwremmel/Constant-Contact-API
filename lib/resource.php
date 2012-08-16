@@ -44,6 +44,40 @@ abstract class Resource implements ICrud{
 			case 'set':
 				$this->data[$property] = $args[0];
 				break;
+			case 'add':
+				$plurals = array_flip($this->itemNodeNames);
+				if (!array_key_exists($property, $plurals)) {
+					throw new BadMethodCallException("${property} is not a known list for this resource.");
+				}
+				$plural = $plurals[$property];
+
+				// Make sure the value identifed by $plural exists and is an
+				// array
+				if (!array_key_exists($plural, $this->data) || !is_array($this->data[$plural])) {
+					$this->data[$plural] = array();
+				}
+
+				// TODO do we need to make sure $args[0] has not already been added?
+				$this->data[$plural][] = $args[0];
+				break;
+			case 'rem':
+				$plurals = array_flip($this->itemNodeNames);
+				if (!array_key_exists($property, $plurals)) {
+					throw new BadMethodCallException("${property} is not a known list for this resource.");
+				}
+				$plural = $plurals[$property];
+
+				// Make sure the value identifed by $plural exists and is an
+				// array
+				if (!array_key_exists($plural, $this->data) || !is_array($this->data[$plural])) {
+					$this->data[$plural] = array();
+				}
+
+				$index = array_search($args[0], $this->data[$plural]);
+				if ($index !== FALSE) {
+					array_splice($this->data[$plural], $index, 1);
+				}
+				break;
 			default:
 				throw new BadMethodCallException("${method} does not exist");
 		}
@@ -70,6 +104,7 @@ abstract class Resource implements ICrud{
 		$response = $this->execute($ch, 201);
 
 		$xml = new SimpleXMLElement($response);
+		// TODO do we need to do additional processing on the XML object?
 		$id = self::extractIdFromString($xml->id);
 
 		// $id is typically numeric, but certain special lists are identified by
@@ -145,14 +180,17 @@ abstract class Resource implements ICrud{
 						// e.g. numerically-indexed arrays), the only way to
 						// figure out if the child contains a singular item is
 						// to determine if the array is numerically indexed.
+						// Assumption: all lists store URIs
 						if (self::is_assoc($value[$singular])) {
 							// single item
-							call_user_func(array($this, 'add'. $singular), $value[$singular]);
+							$uri = $value[$singular]['@attributes']['id'];
+							call_user_func(array($this, 'add'. $singular), $uri);
 						}
 						else {
 							// item list
 							foreach ($value[$singular] as $item) {
-								call_user_func(array($this, 'add'. $singular), $item);
+								$uri = $item['@attributes']['id'];
+								call_user_func(array($this, 'add'. $singular), $uri);
 							}
 						}
 					}
@@ -172,7 +210,7 @@ abstract class Resource implements ICrud{
 		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
 
 		$xml = $this->__toXml();
-		print_r(self::prettyPrintXml($xml));
+
 		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/atom+xml'));
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $xml);
 
@@ -254,6 +292,9 @@ abstract class Resource implements ICrud{
 		return $response;
 	}
 
+	/**
+	 * @todo clean up __toXml() to improve readability
+	 */
 	public function __toXml() {
 		$entry = new SimpleXMLElement('<entry/>');
 		$entry->addAttribute('xmlns', 'http://www.w3.org/2005/Atom');
@@ -290,7 +331,7 @@ abstract class Resource implements ICrud{
 				$itemNodeName = $this->itemNodeNames[$key];
 
 				foreach ($value as $item) {
-					$child = $children->addChild($itemNodeName); //XXX
+					$child = $children->addChild($itemNodeName);
 					$child->addAttribute('id', $item);
 				}
 			}

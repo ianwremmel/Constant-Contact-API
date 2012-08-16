@@ -10,6 +10,10 @@ class ContactResource extends Resource {
 		'ContactLists' => 'ContactList',
 	);
 
+	const STATUS_ACTIVE = 'Active';
+	const STATUS_DONOTMAIL = 'Do Not Mail';
+	const STATUS_REMOVED = 'Removed';
+
 	/*************************************************************************\
 	 * PUBLIC FUNCTIONS
 	\*************************************************************************/
@@ -19,58 +23,19 @@ class ContactResource extends Resource {
 	}
 
 	public function addList($list) {
-		// TODO add do-not-email list here too
-		if ($list === 'removed') {
-			$this->setLists(array());
+		if (is_numeric($list)) {
+			$list = self::generateIdString('lists', $list);
 		}
 
-
-		// TODO ensure $list is not a full URI
-
-		$list = $this->_listIdToString($list);
-
-		$lists = $this->getLists();
-
-		$lists[] = $list;
-		$lists = array_unique($lists);
-
-		$this->setLists($lists);
+		$this->addContactList($list);
 	}
 
 	public function removeList($list) {
-		// TODO ensure $list is not a full URI
-
-		$list = $this->_listIdToString($list);
-
-		$lists = $this->getLists();
-
-		$index = array_search($list, $lists);
-		$lists = array_splice($lists, $index, 1);
-
-		$this->setLists($lists);
-	}
-
-	public function getLists() {
-		if (!isset($this->data['ContactLists'])) {
-			return array();
+		if (is_numeric($list)) {
+			$list = self::generateIdString('lists', $list);
 		}
 
-		return $this->data['ContactLists'];
-	}
-
-	public function setLists($lists) {
-		if (!is_array($lists)) {
-			throw new InvalidArgumentException('$lists must be an array.');
-		}
-
-		$this->data['ContactLists'] = $lists;
-	}
-
-	/**
-	 * @deprecated use self::generateIdString('lists', $id) instead.
-	 */
-	protected function _listIdToString($id) {
-		return self::generateIdString('lists', $id);
+		$this->remContactList($list);
 	}
 
 	/*************************************************************************\
@@ -85,7 +50,7 @@ class ContactResource extends Resource {
 			throw new RuntimeException('OptInSource must be set before calling create().');
 		}
 
-		$lists = $this->getLists();
+		$lists = $this->getContactLists();
 		if (empty($lists)) {
 			throw new RuntimeException('Contact must be assigned to at least one list before calling create().');
 		}
@@ -129,18 +94,8 @@ class ContactResource extends Resource {
 			parent::delete();
 		}
 		else {
-			$this->addList('removed');
+			$this->setContactLists(array());
 			$this->update();
-			print_r($this);
-			exit();
 		}
-	}
-
-	/*************************************************************************\
-	 * RETRIEVAL PROCESSING FUNCTIONS
-	\*************************************************************************/
-	protected function addContactList($item) {
-		$id = self::extractIdFromString($item['@attributes']['id']);
-		$this->addList($id);
 	}
 }

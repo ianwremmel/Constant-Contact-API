@@ -28,6 +28,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 	}
 
 	public function testRetrieveByEmail() {
+		// TODO create contact here so we don't need to rely on USER_ONE_EMAIL
 		$cr = new ContactResource();
 		$cr->setEmailAddress(USER_ONE_EMAIL);
 
@@ -64,17 +65,19 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$cr->addList(1);
 		$cr->create();
 
-		$cr->addList('test list');
+		// TODO remove hardcoded '2' from this test
+		$cr->addList(2);
 		$cr->update();
 
 		$cr2 = new ContactResource();
 		$cr2->setEmailAddress($address);
 		$cr2->retrieve();
 
-		$this->assertContains('test list', $cr2->getLists());
+		$this->assertContains(ContactResource::generateIdString('lists', 2), $cr2->getContactLists());
 	}
 
 	public function testUpdateRemoveFromList() {
+		// TODO add an assertion to make sure the correct change is made locallay
 		$address = $this->makeEmailAddress();
 
 		$cr = new ContactResource();
@@ -82,26 +85,46 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$cr->addList(1);
 		$cr->create();
 
-		$cr->addList('test list');
+		// TODO remove hardcoded '2' from this test
+		$cr->addList(2);
 		$cr->update();
 
 		$cr2 = new ContactResource();
 		$cr2->setEmailAddress($address);
 		$cr2->retrieve();
 
-		$this->assertContains('test list', $cr2->getLists());
+		$this->assertContains(ContactResource::generateIdString('lists', 2), $cr2->getContactLists());
 
-		$cr2->removeList('test list');
+		$cr2->removeList(2);
 		$cr2->update();
 
 		$cr3 = new ContactResource();
 		$cr3->setEmailAddress($address);
 		$cr3->retrieve();
 
-		$this->assertNotContains('test list', $cr3->getLists());
+		$this->assertNotContains(ContactResource::generateIdString('lists', 2), $cr3->getContactLists());
 	}
 
-	public function testDelete() {
+	public function testDeletePermanent() {
+		$address = $this->makeEmailAddress();
+
+		$cr = new ContactResource();
+		$cr->setEmailAddress($address);
+		$cr->addList(1);
+		$cr->create();
+
+		$id = $cr->getId();
+		$cr->delete(TRUE);
+
+		$cr2 = new ContactResource();
+		$cr2->setEmailAddress($address);
+		$cr2->retrieve();
+
+		$this->assertEmpty($cr2->getContactLists());
+		$this->assertEquals($cr2->getStatus(), ContactResource::STATUS_DONOTMAIL);
+	}
+
+	public function testDeleteTemporary() {
 		$address = $this->makeEmailAddress();
 
 		$cr = new ContactResource();
@@ -116,6 +139,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$cr2->setEmailAddress($address);
 		$cr2->retrieve();
 
-		$this->assertNull($cr2->getId());
+		$this->assertEmpty($cr2->getContactLists());
+		$this->assertEquals($cr2->getStatus(), ContactResource::STATUS_REMOVED);
 	}
 }
