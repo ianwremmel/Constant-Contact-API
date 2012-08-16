@@ -1,6 +1,6 @@
 <?php
 
-require_once 'resource.php';
+require_once 'lib/resource.php';
 
 class ContactResource extends Resource {
 	protected $endpoint = 'contacts';

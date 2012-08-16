@@ -1,6 +1,6 @@
 <?php
 
-require_once 'lib/contact_resource.php';
+require_once 'lib/resource/contact.php';
 require_once 'config.php';
 
 class ContactResourceTest extends PHPUnit_Framework_TestCase {
