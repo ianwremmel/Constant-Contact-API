@@ -1,0 +1,7 @@
+Add support for campaigns
+Add support for Events
+Finish Activities
+Add helpers
+Refactor tests so that they can be run against a live account with minimal
+pollution or destruction
+Refactor tests to reduce duplicate code
