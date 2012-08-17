@@ -36,6 +36,6 @@ class ContactListResource extends Resource {
 	 * member (note: this may be expensive).
 	 */
 	public function members($full = FALSE) {
-		return $this->objects('members', 'ContactResource', 'resource/contact.php', $full);
+		return $this->objects('/members', 'ContactResource', 'resource/contact.php', $full);
 	}
 }

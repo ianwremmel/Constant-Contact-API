@@ -19,7 +19,6 @@ class ContactResource extends Resource {
 	\*************************************************************************/
 	public function __construct() {
 		parent::__construct();
-		$this->setOptInSource(self::ACTION_BY_CUSTOMER);
 	}
 
 	public function addList($list) {
@@ -62,11 +61,20 @@ class ContactResource extends Resource {
 	 * Retries a contact by email address or id.  Note: if using email address,
 	 * two calls will be made to Constant Contact.
 	 */
-	public function retrieve() {
+	public function retrieve($full = FALSE) {
 		if (is_null($this->getId())) {
+			// If we have neither an email address or an id, this is a bulk
+			// operation and we need to return the array of contacts.
 			if (is_null($this->getEmailAddress())) {
-				throw new RuntimeException('Id or EmailAddress must be set before calling retrieve().');
+				if (array_key_exists('updatedsince', $this->data)) {
+					if (!array_key_exists('listid', $this->data) && !array_key_exists('listtype', $this->data)) {
+						throw new RuntimeException('"updatedsince" requires either "listid" or "listtype" to be set.');
+					}
+				}
+				return parent::retrieve($full);
 			}
+			// Otherwise, we need to substitute the email address for the id and
+			// call retrieve twice.
 			else {
 				$this->setId('?email=' . $this->getEmailAddress());
 				// If we're retrieving by email, we'll only get a partial

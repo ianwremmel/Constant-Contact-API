@@ -199,26 +199,60 @@ abstract class Resource implements ICrud{
 		}
 	}
 
-	public function retrieve() {
-		$ch = $this->twist();
+	/**
+	 * @param boolena $full Only used in bulk mode.  If TRUE, retrieve() will be
+	 * called for each returned resource.  Note: this may be expensive.
+	 */
+	public function retrieve($full = FALSE) {
+		// If we attempted to retrieve without an ID, then we should retrieve
+		// the endpoint itself, which will typically list all of the items
+		// available at that endpoint.
+		if (is_null($this->getId())) {
+			// treat any values set on this resource as query string parameters
+			$query = array();
+			foreach ($this->data as $key => $value) {
+				$query[] = urlencode($key) . '=' . urlencode($value);
+			}
+			$uriSuffix = '?' . implode('&', $query);
 
-		curl_setopt($ch, CURLOPT_HTTPGET, TRUE);
+			$ch = $this->twist($uriSuffix);
+			curl_setopt($ch, CURLOPT_HTTPGET, TRUE);
 
-		$response = $this->execute($ch, 200);
+			$response = $this->execute($ch, 200);
+			$xml = new SimpleXMLElement($response);
 
-		$xml = new SimpleXMLElement($response);
+			$class = get_class($this);
+			$resources = array();
+			foreach ($xml->entry as $entry) {
+				$resource = new $class(); /* @var $resource Resource */
+				$resource->createFromXml($entry);
+				if ($full) {
+					$resource->retrieve();
+				}
+				$resources[] = $resource;
+			}
 
-		// If we retrieved by a secondary identifier (e.g. email address), we
-		// need to do some extra tweeks.
-		if ($xml->getName() === 'feed') {
-			// TODO ensure there is only one <entry>
-
-			// First, the entry is a child of the main object rather than the
-			// main object
-			$xml = $xml->entry;
+			return $resources;
 		}
+		else {
+			$ch = $this->twist();
+			curl_setopt($ch, CURLOPT_HTTPGET, TRUE);
 
-		$this->createFromXml($xml);
+			$response = $this->execute($ch, 200);
+			$xml = new SimpleXMLElement($response);
+
+			// If we retrieved by a secondary identifier (e.g. email address), we
+			// need to do some extra tweeks.
+			if ($xml->getName() === 'feed') {
+				// TODO ensure there is only one <entry>
+
+				// First, the entry is a child of the main object rather than the
+				// main object
+				$xml = $xml->entry;
+			}
+
+			$this->createFromXml($xml);
+		}
 	}
 
 	public function update() {
@@ -267,7 +301,9 @@ abstract class Resource implements ICrud{
 		}
 
 		if (!is_null($urlSuffix)) {
-			$url .= '/' . $urlSuffix;
+			// TODO verify that $urlSuffix starts with either a slash or a
+			// question mark
+			$url .= $urlSuffix;
 		}
 
 		// Initialize the cURL session
