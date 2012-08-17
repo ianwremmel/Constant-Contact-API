@@ -17,10 +17,6 @@ class ContactResource extends Resource {
 	/*************************************************************************\
 	 * PUBLIC FUNCTIONS
 	\*************************************************************************/
-	public function __construct() {
-		parent::__construct();
-	}
-
 	public function addList($list) {
 		if (is_numeric($list)) {
 			$list = self::generateIdString('lists', $list);
