@@ -31,17 +31,11 @@ class ContactListResource extends Resource {
 		}
 	}
 
-	public function members() {
-		$ch = $this->twist('members');
-		$response = $this->execute($ch);
-		$xml = new SimpleXMLElement($response);
-		$xmlArray = json_decode(json_encode($xml));
-		print_r($xml);
-
-		foreach ($xml->entry as $entry) {
-			print_r($entry);
-			exit();
-			print $entry->id . PHP_EOL;
-		}
+	/**
+	 * @param boolean $full If true, will call retrieve for each retrieved
+	 * member (note: this may be expensive).
+	 */
+	public function members($full = FALSE) {
+		return $this->objects('members', 'ContactResource', 'resource/contact.php', $full);
 	}
 }

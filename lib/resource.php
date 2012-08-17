@@ -367,4 +367,30 @@ abstract class Resource implements ICrud{
 	static function is_assoc($array) {
 		return (bool)count(array_filter(array_keys($array), 'is_string'));
 	}
+
+	/**
+	 * @param boolean $full If true, will call retrieve for each retrieved
+	 * returned resource (note: this may be expensive).
+	 */
+	protected function objects($uriSuffix, $resourceClass, $resourceFile, $full = FALSE) {
+		require_once($resourceFile);
+
+		$ch = $this->twist($uriSuffix);
+		$response = $this->execute($ch);
+
+		$xml = new SimpleXMLElement($response);
+
+		$resources = array();
+
+		foreach ($xml->entry as $entry) {
+			$resource = new $resourceClass();
+			$resource->createFromXml($entry);
+			if ($full) {
+				$resource->retrieve();
+			}
+			$resources[] = $resource;
+		}
+
+		return $resources;
+	}
 }
