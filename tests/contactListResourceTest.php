@@ -1,5 +1,6 @@
 <?php
 
+require_once 'lib/resource/contact.php';
 require_once 'lib/resource/contact_list.php';
 require_once 'config.php';
 
@@ -89,6 +90,18 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals($clr->getName(), $clr2->getName());
 	}
 
+	public function testRetrieveBulk() {
+		$clr = new ContactListResource();
+		$lists = $clr->retrieve();
+
+		$this->assertTrue(is_array($lists));
+		$this->assertNotEmpty($lists);
+
+		foreach ($lists as $list) {
+			$this->assertInstanceOf('ContactListResource', $list);
+		}
+	}
+
 	public function testDelete() {
 		$clr = new ContactListResource();
 		$clr->setName('testDelete' . microtime(true));
@@ -101,5 +114,104 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 		$clr->delete();
 
 		$clr2->retrieve();
+	}
+
+	public function testMembers() {
+		// Create a list
+		$clr = new ContactListResource();
+		$clr->setName('testMembers' . microtime(TRUE));
+		$clr->create();
+
+		// Add a contact to the list
+		$cr = new ContactResource();
+		$cr->setEmailAddress('testMembers' . microtime(TRUE) . '@mailinator.com');
+		$cr->setOptInSource(ContactResource::ACTION_BY_CUSTOMER);
+		$cr->addList($clr->getId());
+		$cr->create();
+
+		// Refresh the list
+		$clr->retrieve();
+
+		// Ensure that the list has a member
+		$this->assertEquals($clr->getContactCount(), 1);
+
+		// Get the list's members
+		$members = $clr->members();
+
+		$this->assertTrue(is_array($members));
+		$this->assertNotEmpty($members);
+		$this->assertCount(1, $members);
+
+		// Ensure the list's members are contact resources
+		foreach ($members as $member) {
+			$this->assertInstanceOf('ContactResource', $member);
+		}
+
+		$member = $members[0];
+		// Ensure the list member is the correct ContactResource.
+		$this->assertEquals($cr->getId(), $member->getId());
+
+		// Add a second contact to the list and repeat
+		// TODO everything below here probably belongs in a separate test
+		// Add a contact to the list
+		$cr = new ContactResource();
+		$cr->setEmailAddress('testMembers' . microtime(TRUE) . '@mailinator.com');
+		$cr->setOptInSource(ContactResource::ACTION_BY_CUSTOMER);
+		$cr->addList($clr->getId());
+		$cr->create();
+
+		// Refresh the list
+		$clr->retrieve();
+
+		// Ensure that the list has a member
+		$this->assertEquals($clr->getContactCount(), 2);
+
+		// Get the list's members
+		$members = $clr->members();
+
+		$this->assertTrue(is_array($members));
+		$this->assertNotEmpty($members);
+		$this->assertCount(2, $members);
+
+		// Ensure the list's members are contact resources
+		foreach ($members as $member) {
+			$this->assertInstanceOf('ContactResource', $member);
+		}
+	}
+
+	public function testMembersFull() {
+		// Create a list
+		$clr = new ContactListResource();
+		$clr->setName('testMembers' . microtime(TRUE));
+		$clr->create();
+
+		// Add a contact to the list
+		$cr = new ContactResource();
+		$cr->setEmailAddress('testMembers' . microtime(TRUE) . '@mailinator.com');
+		$cr->setOptInSource(ContactResource::ACTION_BY_CUSTOMER);
+		$cr->addList($clr->getId());
+		$cr->create();
+
+		// Refresh the list
+		$clr->retrieve();
+
+		// Ensure that the list has a member
+		$this->assertEquals($clr->getContactCount(), 1);
+
+		// Get the list's members
+		$members = $clr->members(TRUE);
+
+		$this->assertTrue(is_array($members));
+		$this->assertNotEmpty($members);
+		$this->assertCount(1, $members);
+
+		// Ensure the list's members are contact resources
+		foreach ($members as $member) {
+			$this->assertInstanceOf('ContactResource', $member);
+		}
+
+		$member = $members[0];
+		// Ensure the list member is the correct ContactResource.
+		$this->assertEquals($cr->getId(), $member->getId());
 	}
 }
