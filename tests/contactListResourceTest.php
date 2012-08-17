@@ -6,7 +6,7 @@ require_once 'config.php';
 class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 	public function testCreate() {
 		$clr = new ContactListResource();
-		$clr->setName('testCreate' . time());
+		$clr->setName('testCreate' . microtime(true));
 		$clr->create();
 
 		$this->assertNotNull($clr->getId());
@@ -14,7 +14,7 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 
 	public function testUpdateOptInDefault() {
 		$clr = new ContactListResource();
-		$clr->setName('testUpdateOptInDefault' . time());
+		$clr->setName('testUpdateOptInDefault' . microtime(true));
 		$clr->create();
 
 		$clr2 = new ContactListResource();
@@ -37,7 +37,7 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 	}
 
 	public function testUpdateName() {
-		$time = time();
+		$time = microtime(true);
 		$clr = new ContactListResource();
 		$clr->setName('testUpdateName' . $time);
 		$clr->create();
@@ -58,7 +58,7 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 
 	public function testUpdateSortOrder() {
 		$clr = new ContactListResource();
-		$clr->setName('testUpdateSortOrder' . time());
+		$clr->setName('testUpdateSortOrder' . microtime(true));
 		$clr->create();
 
 		$clr2 = new ContactListResource();
@@ -78,7 +78,7 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 
 	public function testRetrieve() {
 		$clr = new ContactListResource();
-		$clr->setName('testRetrieve' . time());
+		$clr->setName('testRetrieve' . microtime(true));
 		$clr->create();
 
 		$clr2 = new ContactListResource();
@@ -91,7 +91,7 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 
 	public function testDelete() {
 		$clr = new ContactListResource();
-		$clr->setName('testDelete' . time());
+		$clr->setName('testDelete' . microtime(true));
 		$clr->create();
 
 		$clr2 = new ContactListResource();

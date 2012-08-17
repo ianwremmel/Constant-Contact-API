@@ -6,7 +6,7 @@ require_once 'config.php';
 class ContactResourceTest extends PHPUnit_Framework_TestCase {
 
 	protected function makeEmailAddress() {
-		return 'test-' . time() . '@mailinator.com';
+		return 'test-' . microtime(TRUE) . '@mailinator.com';
 	}
 
 	public function testCreate() {
