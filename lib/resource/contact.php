@@ -11,8 +11,12 @@ class ContactResource extends Resource {
 	);
 
 	const STATUS_ACTIVE = 'Active';
-	const STATUS_DONOTMAIL = 'Do Not Mail';
-	const STATUS_REMOVED = 'Removed';
+	const STATUS_DONOTMAIL = 'Do Not Mail'; // Permanent
+	const STATUS_REMOVED = 'Removed'; // Temporary
+
+	const LIST_TYPE_ACTIVE = 'active';
+	const LIST_TYPE_DONOTMAIL = 'do-not-mail'; // Permanent
+	const LIST_TYPE_REMOVED = 'removed'; // Temporary
 
 	/*************************************************************************\
 	 * PUBLIC FUNCTIONS

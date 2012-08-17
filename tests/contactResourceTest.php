@@ -12,6 +12,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 	public function testCreate() {
 		$cr = new ContactResource();
 		$cr->setEmailAddress($this->makeEmailAddress());
+		$cr->setOptInSource(Resource::ACTION_BY_CUSTOMER);
 		$cr->addList(1);
 		$cr->create();
 
@@ -24,7 +25,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 
 		$cr->retrieve();
 
-		$this->assertEquals($cr->getEmailAddress(), USER_ONE_EMAIL);
+		$this->assertEquals(USER_ONE_EMAIL, $cr->getEmailAddress());
 	}
 
 	public function testRetrieveByEmail() {
@@ -34,7 +35,144 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 
 		$cr->retrieve();
 
-		$this->assertEquals($cr->getId(), 1);
+		$this->assertEquals(1, $cr->getId());
+	}
+
+	public function testRetrieveBulk() {
+		$cr = new ContactResource();
+
+		$contacts = $cr->retrieve();
+
+		$this->assertTrue(is_array($contacts));
+		$this->assertNotEmpty($contacts);
+
+		foreach ($contacts as $contact) {
+			$this->assertInstanceOf('ContactResource', $contact);
+		}
+	}
+
+	public function testRetrieveBulkSinceXByListId() {
+		// store the function start time
+		$time = time();
+
+		$cr = new ContactResource();
+		$cr->setEmailAddress('testRetrieveBulkSinceXByListId' . microtime(TRUE) . '@mailinator.com');
+		$cr->setOptInSource(Resource::ACTION_BY_CUSTOMER);
+		$cr->addList(1);
+		$cr->create();
+
+		$crBulk = new ContactResource();
+		$crBulk->setupdatedsince(date(DATE_ATOM, $time));
+		$crBulk->setlistid(1);
+		$updates = $crBulk->retrieve();
+
+		$this->assertTrue(is_array($updates));
+		$this->assertNotEmpty($updates);
+
+		$ids = array();
+		foreach ($updates as $update) {
+			/* @var $update ContactResource */
+			$this->assertInstanceOf('ContactResource', $update);
+			$ids[] = $update->getId();
+		}
+
+		$this->assertContains($cr->getId(), $ids);
+	}
+
+	public function testRetrieveBulkSinceXByListType() {
+		$time = time();
+
+		// Create a contact
+		$cr = new ContactResource();
+		$cr->setEmailAddress('testRetrieveBulkSinceXByListType' . microtime(TRUE) . '@mailinator.com');
+		$cr->addList(1);
+		$cr->setOptInSource(Resource::ACTION_BY_CUSTOMER);
+		$cr->create();
+		$cr->retrieve();
+
+		// make sure it's active
+		$this->assertEquals(ContactResource::STATUS_ACTIVE, $cr->getStatus());
+		// make sure it comes back via bulk retrieve
+		$crBulk = new ContactResource();
+		$crBulk->setupdatedsince(date(DATE_ATOM, $time));
+		$crBulk->setlisttype(ContactResource::LIST_TYPE_ACTIVE);
+
+		$updates = $crBulk->retrieve();
+		$this->assertNotEmpty($updates);
+
+		$ids = array();
+		foreach ($updates as $update) {
+			/* @var $update ContactResource */
+			$this->assertInstanceOf('ContactResource', $update);
+			$ids[] = $update->getId();
+		}
+
+		$this->assertContains($cr->getId(), $ids);
+
+
+		// remove it from all lists
+		$cr->delete();
+		$cr->retrieve();
+
+		// make sure it's removed
+		$this->assertEquals(ContactResource::STATUS_REMOVED, $cr->getStatus());
+		// Make sure it's out of the active group
+		$updates = $crBulk->retrieve();
+
+		$ids = array();
+		foreach ($updates as $update) {
+			/* @var $update ContactResource */
+			$this->assertInstanceOf('ContactResource', $update);
+			$ids[] = $update->getId();
+		}
+
+		$this->assertNotContains($cr->getId(), $ids);
+
+		// and part of the removed group
+		$crBulk->setlisttype(ContactResource::LIST_TYPE_REMOVED);
+		$updates = $crBulk->retrieve();
+		$this->assertNotEmpty($updates);
+
+		$ids = array();
+		foreach ($updates as $update) {
+			/* @var $update ContactResource */
+			$this->assertInstanceOf('ContactResource', $update);
+			$ids[] = $update->getId();
+		}
+
+		$this->assertContains($cr->getId(), $ids);
+
+		// delete it
+		$cr->delete(TRUE);
+		$cr->retrieve();
+
+		// make sure it's do-not-email
+		$this->assertEquals(ContactResource::STATUS_DONOTMAIL, $cr->getStatus());
+		// Make sure it's out of the removed group
+		$updates = $crBulk->retrieve();
+
+		$ids = array();
+		foreach ($updates as $update) {
+			/* @var $update ContactResource */
+			$this->assertInstanceOf('ContactResource', $update);
+			$ids[] = $update->getId();
+		}
+
+		$this->assertNotContains($cr->getId(), $ids);
+
+		// and part of the do not mail group
+		$crBulk->setlisttype(ContactResource::LIST_TYPE_DONOTMAIL);
+		$updates = $crBulk->retrieve();
+		$this->assertNotEmpty($updates);
+
+		$ids = array();
+		foreach ($updates as $update) {
+			/* @var $update ContactResource */
+			$this->assertInstanceOf('ContactResource', $update);
+			$ids[] = $update->getId();
+		}
+
+		$this->assertContains($cr->getId(), $ids);
 	}
 
 	public function testUpdateEmailAddress() {
@@ -43,6 +181,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$cr = new ContactResource();
 		$cr->setEmailAddress($oldAddress);
 		$cr->addList(1);
+		$cr->setOptInSource(Resource::ACTION_BY_CUSTOMER);
 		$cr->create();
 
 		$newAddress = $this->makeEmailAddress();
@@ -63,6 +202,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$cr = new ContactResource();
 		$cr->setEmailAddress($address);
 		$cr->addList(1);
+		$cr->setOptInSource(Resource::ACTION_BY_CUSTOMER);
 		$cr->create();
 
 		// TODO remove hardcoded '2' from this test
@@ -83,6 +223,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$cr = new ContactResource();
 		$cr->setEmailAddress($address);
 		$cr->addList(1);
+		$cr->setOptInSource(Resource::ACTION_BY_CUSTOMER);
 		$cr->create();
 
 		// TODO remove hardcoded '2' from this test
@@ -111,6 +252,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$cr = new ContactResource();
 		$cr->setEmailAddress($address);
 		$cr->addList(1);
+		$cr->setOptInSource(Resource::ACTION_BY_CUSTOMER);
 		$cr->create();
 
 		$id = $cr->getId();
@@ -121,7 +263,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$cr2->retrieve();
 
 		$this->assertEmpty($cr2->getContactLists());
-		$this->assertEquals($cr2->getStatus(), ContactResource::STATUS_DONOTMAIL);
+		$this->assertEquals(ContactResource::STATUS_DONOTMAIL, $cr2->getStatus());
 	}
 
 	public function testDeleteTemporary() {
@@ -130,6 +272,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$cr = new ContactResource();
 		$cr->setEmailAddress($address);
 		$cr->addList(1);
+		$cr->setOptInSource(Resource::ACTION_BY_CUSTOMER);
 		$cr->create();
 
 		$id = $cr->getId();
@@ -140,6 +283,6 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$cr2->retrieve();
 
 		$this->assertEmpty($cr2->getContactLists());
-		$this->assertEquals($cr2->getStatus(), ContactResource::STATUS_REMOVED);
+		$this->assertEquals(ContactResource::STATUS_REMOVED, $cr2->getStatus());
 	}
 }
