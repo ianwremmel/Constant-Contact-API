@@ -3,11 +3,11 @@ Constant-Contact-API
 
 Object-oriented, resource-based interface to the Constant Contact REST API written for PHP 5.
 
+This library attempts to conform to the ReSTful resource semantics by providing classes to represent the various Constant Contact resource types as well as CRUD operations for each.
+
 Motivation
 ----------
-Constant Contact recommends a library that is very much influenced by PHP4. The library has very little documentation and covers up most of the errors from Constant Contact with generic messaging (or simply a true/false indicator of success). In fact, when attempting to use the Drupal module based on it (and written by the same company), it didn't seem to work at all.
-
-This library attempts to conform to the ReSTful resource semantics by providing classes to represent the various Constant Contact resource types as well as CRUD operations for each.
+Constant Contact recommends a library that is very much influenced by PHP4. The library has very little documentation and covers up most of the errors from Constant Contact with generic messaging (or simply a true/false indicator of success). In fact, when attempting to use the Drupal module based on it (and written by the same company), it didn't seem to work at all. Rather than spend the time to debug a seemingly broken and outdated library without understanding the Constant Contact API, it made more sense to learn the API by creating a new library designed for PHP5.
 
 Getting Started
 ---------------
