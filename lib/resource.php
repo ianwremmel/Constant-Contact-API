@@ -3,33 +3,15 @@
 require_once 'crud_interface.php';
 
 abstract class Resource implements ICrud{
+	/**************************************************************************\
+	 * CONSTANTS
+	\**************************************************************************/
 	const ACTION_BY_CUSTOMER = 'ACTION_BY_CUSTOMER';
 	const ACTION_BY_CONTACT = 'ACTION_BY_CONTACT';
 
-	/**
-	 * API Username
-	 * @var string
-	 */
-	protected $username = NULL;
-
-	/**
-	 * API Password
-	 * @var string
-	 */
-	protected $password = NULL;
-
-	/**
-	 * API Password
-	 * @var string
-	 */
-	protected $apiKey = NULL;
-
-	/**
-	 * Maps plural XML entity names to their singular child entity names.
-	 * @var array
-	 */
-	protected $itemNodeNames = array();
-
+	/**************************************************************************\
+	 * STATIC METHODS
+	\**************************************************************************/
 	/**
 	 * Generates a URI for a particular Constant Contact resource.
 	 * @param string $endpoint The resource type (e.g. 'lists', 'contacts', etd)
@@ -52,10 +34,18 @@ abstract class Resource implements ICrud{
 	}
 
 	/**
-	 * Stores all of the Resource's fields.
+	 * Determines whether an array is associative based on a now-lost Stack
+	 * Overflow post.
+	 * @paramm array $array the array to check
+	 * @return boolean whether or not the array is associative.
 	 */
-	protected $data = array();
+	static function is_assoc($array) {
+		return (bool)count(array_filter(array_keys($array), 'is_string'));
+	}
 
+	/**************************************************************************\
+	 * PUBLIC METHODS
+	\**************************************************************************/
 	/**
 	 * Creates the magic methods get, set, add, and rem.
 	 */
@@ -136,36 +126,6 @@ abstract class Resource implements ICrud{
 		else {
 			throw new RuntimeException('No credentials specified for Constant Contact API');
 		}
-	}
-
-	/**
-	 * POSTs a resource into Constant Contact.
-	 */
-	public function create() {
-		$ch = $this->twist();
-
-		// bulk actions can use CURLOPT_POST since they are
-		// application/x-www-form-urlencoded, but singular actions need
-		// to use CURLOPT_CUSTOMREQUEST since they are
-		// application/atom+xml.
-		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-
-		$xml = $this->__toXml();
-		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/atom+xml'));
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $xml);
-
-		$response = $this->execute($ch, 201);
-
-		$xml = new SimpleXMLElement($response);
-		// TODO do we need to do additional processing on the XML object?
-		$id = self::extractIdFromString($xml->id);
-
-		// $id is typically numeric, but certain special lists are identified by
-		// strings.
-		if (is_numeric($id)) {
-			$id = intval($id);
-		}
-		$this->setId($id);
 	}
 
 	/**
@@ -254,6 +214,126 @@ abstract class Resource implements ICrud{
 				}
 			}
 		}
+	}
+
+	/**
+	 * Converts $this into the atom-feed-embedded-custom-xml-format that the
+	 * Constant Contact API requires.
+	 * @todo clean up __toXml() to improve readability
+	 */
+	public function __toXml() {
+		$entry = new SimpleXMLElement('<entry/>');
+		$entry->addAttribute('xmlns', 'http://www.w3.org/2005/Atom');
+
+		$title = $entry->addChild('title')->addAttribute('type', 'text');
+
+		$updated = $entry->addChild('updated', date(DATE_ATOM));
+
+		$author = $entry->addChild('author');
+
+		$summary = $entry->addChild('summary', $this->objectType);
+		$summary->addAttribute('type', 'text');
+
+		$content = $entry->addChild('content');
+		$content->addAttribute('type', 'application/vnd.ctct+xml'); //XXX
+
+		$object = $content->addChild($this->objectType);
+		$object->addAttribute('xmlns', 'http://ws.constantcontact.com/ns/1.0/');
+
+		if (is_null($this->getId())) {
+			$id = $entry->addChild('id', 'data:,none');
+		}
+		else {
+			$idString = self::generateIdString($this->endpoint, $this->getId());
+
+			$object->addAttribute('id', $idString);
+			$id = $entry->addChild('id', $idString);
+		}
+
+		foreach ($this->data as $key => $value) {
+			if (is_array($value)) {
+				$children = $object->addChild($key);
+
+				$itemNodeName = $this->itemNodeNames[$key];
+
+				foreach ($value as $item) {
+					$child = $children->addChild($itemNodeName);
+					$child->addAttribute('id', $item);
+				}
+			}
+			else if (is_object($value)) {
+			}
+			else {
+				$child = $object->addChild($key, $value);
+			}
+		}
+
+		return $entry->asXML();
+	}
+
+	/**************************************************************************\
+	 * PROPERTIES
+	\**************************************************************************/
+	/**
+	 * API Username
+	 * @var string
+	 */
+	protected $username = NULL;
+
+	/**
+	 * API Password
+	 * @var string
+	 */
+	protected $password = NULL;
+
+	/**
+	 * API Password
+	 * @var string
+	 */
+	protected $apiKey = NULL;
+
+	/**
+	 * Maps plural XML entity names to their singular child entity names.
+	 * @var array
+	 */
+	protected $itemNodeNames = array();
+
+	/**
+	 * Stores all of the Resource's fields.
+	 */
+	protected $data = array();
+
+	/**************************************************************************\
+	 * CRUD METHODS
+	\**************************************************************************/
+	/**
+	 * POSTs a resource into Constant Contact.
+	 */
+	public function create() {
+		$ch = $this->twist();
+
+		// bulk actions can use CURLOPT_POST since they are
+		// application/x-www-form-urlencoded, but singular actions need
+		// to use CURLOPT_CUSTOMREQUEST since they are
+		// application/atom+xml.
+		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
+
+		$xml = $this->__toXml();
+		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/atom+xml'));
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $xml);
+
+		$response = $this->execute($ch, 201);
+
+		$xml = new SimpleXMLElement($response);
+		// TODO do we need to do additional processing on the XML object?
+		$id = self::extractIdFromString($xml->id);
+
+		// $id is typically numeric, but certain special lists are identified by
+		// strings.
+		if (is_numeric($id)) {
+			$id = intval($id);
+		}
+		$this->setId($id);
 	}
 
 	/**
@@ -348,7 +428,9 @@ abstract class Resource implements ICrud{
 		// from the server.
 		$this->execute($ch, 204);
 	}
-
+	/**************************************************************************\
+	 * HELPER METHODS
+	\**************************************************************************/
 	/**
 	 * Common code for setting up a cURL session
 	 * @param string $urlSuffix suffix to append to the URL after the id (if it exists) is appended.  Used by ContactListResource::members and ContactResource::events
@@ -415,71 +497,6 @@ abstract class Resource implements ICrud{
 		}
 
 		return $response;
-	}
-
-	/**
-	 * Converts $this into the atom-feed-embedded-custom-xml-format that the
-	 * Constant Contact API requires.
-	 * @todo clean up __toXml() to improve readability
-	 */
-	public function __toXml() {
-		$entry = new SimpleXMLElement('<entry/>');
-		$entry->addAttribute('xmlns', 'http://www.w3.org/2005/Atom');
-
-		$title = $entry->addChild('title')->addAttribute('type', 'text');
-
-		$updated = $entry->addChild('updated', date(DATE_ATOM));
-
-		$author = $entry->addChild('author');
-
-		$summary = $entry->addChild('summary', $this->objectType);
-		$summary->addAttribute('type', 'text');
-
-		$content = $entry->addChild('content');
-		$content->addAttribute('type', 'application/vnd.ctct+xml'); //XXX
-
-		$object = $content->addChild($this->objectType);
-		$object->addAttribute('xmlns', 'http://ws.constantcontact.com/ns/1.0/');
-
-		if (is_null($this->getId())) {
-			$id = $entry->addChild('id', 'data:,none');
-		}
-		else {
-			$idString = self::generateIdString($this->endpoint, $this->getId());
-
-			$object->addAttribute('id', $idString);
-			$id = $entry->addChild('id', $idString);
-		}
-
-		foreach ($this->data as $key => $value) {
-			if (is_array($value)) {
-				$children = $object->addChild($key);
-
-				$itemNodeName = $this->itemNodeNames[$key];
-
-				foreach ($value as $item) {
-					$child = $children->addChild($itemNodeName);
-					$child->addAttribute('id', $item);
-				}
-			}
-			else if (is_object($value)) {
-			}
-			else {
-				$child = $object->addChild($key, $value);
-			}
-		}
-
-		return $entry->asXML();
-	}
-
-	/**
-	 * Determines whether an array is associative based on a now-lost Stack
-	 * Overflow post.
-	 * @paramm array $array the array to check
-	 * @return boolean whether or not the array is associative.
-	 */
-	static function is_assoc($array) {
-		return (bool)count(array_filter(array_keys($array), 'is_string'));
 	}
 
 	/**
