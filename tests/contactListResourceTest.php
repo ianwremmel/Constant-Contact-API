@@ -5,6 +5,9 @@ require_once 'lib/resource/contact_list.php';
 require_once 'config.php';
 
 class ContactListResourceTest extends PHPUnit_Framework_TestCase {
+	/**
+	 * Create a ContactList with the minimum set of required fields.
+	 */
 	public function testCreate() {
 		$clr = new ContactListResource();
 		$clr->setName('testCreate' . microtime(true));
@@ -13,6 +16,9 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 		$this->assertNotNull($clr->getId());
 	}
 
+	/**
+	 * Toggle the OptInDefault field with the update action.
+	 */
 	public function testUpdateOptInDefault() {
 		$clr = new ContactListResource();
 		$clr->setName('testUpdateOptInDefault' . microtime(true));
@@ -37,6 +43,9 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 		$this->assertFalse($clr->getOptInDefault());
 	}
 
+	/**
+	 * Change the Name field with the update action.
+	 */
 	public function testUpdateName() {
 		$time = microtime(true);
 		$clr = new ContactListResource();
@@ -57,6 +66,9 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals($newName, $clr2->getName());
 	}
 
+	/**
+	 * Change the SortOrder field with the update action.
+	 */
 	public function testUpdateSortOrder() {
 		$clr = new ContactListResource();
 		$clr->setName('testUpdateSortOrder' . microtime(true));
@@ -77,6 +89,9 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals($sortOrder, $clr2->getSortOrder());
 	}
 
+	/**
+	 * Retrieve a ContactList.
+	 */
 	public function testRetrieve() {
 		$clr = new ContactListResource();
 		$clr->setName('testRetrieve' . microtime(true));
@@ -90,6 +105,9 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals($clr->getName(), $clr2->getName());
 	}
 
+	/**
+	 * Retrieve all ContactLists.
+	 */
 	public function testRetrieveBulk() {
 		$clr = new ContactListResource();
 		$lists = $clr->retrieve();
@@ -102,6 +120,9 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 		}
 	}
 
+	/**
+	 * Delete a ContactList.
+	 */
 	public function testDelete() {
 		$clr = new ContactListResource();
 		$clr->setName('testDelete' . microtime(true));
@@ -116,6 +137,10 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 		$clr2->retrieve();
 	}
 
+	/**
+	 * Create a ContactList, create Contacts as members of the list, and
+	 * retrieve them using the ContactList's members() method.
+	 */
 	public function testMembers() {
 		// Create a list
 		$clr = new ContactListResource();
@@ -179,6 +204,11 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 		}
 	}
 
+	/**
+	 * Create a ContactList, create Contacts as members of the list, and
+	 * retrieve them using the ContactList's members() method with the $full
+	 * parameter set to TRUE.
+	 */
 	public function testMembersFull() {
 		// Create a list
 		$clr = new ContactListResource();

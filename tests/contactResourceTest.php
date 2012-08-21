@@ -5,10 +5,16 @@ require_once 'config.php';
 
 class ContactResourceTest extends PHPUnit_Framework_TestCase {
 
+	/**
+	 * Creates a new unique email address.
+	 */
 	protected function makeEmailAddress() {
 		return 'test-' . microtime(TRUE) . '@mailinator.com';
 	}
 
+	/**
+	 * Create a new Contact with the minimum set of required fields.
+	 */
 	public function testCreate() {
 		$cr = new ContactResource();
 		$cr->setEmailAddress($this->makeEmailAddress());
@@ -19,6 +25,9 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$this->assertFalse(is_null($cr->getId()));
 	}
 
+	/**
+	 * Retrieve a Contact by numeric ID.
+	 */
 	public function testRetrieveById() {
 		$cr = new ContactResource();
 		$cr->setId(1);
@@ -28,6 +37,9 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals(USER_ONE_EMAIL, $cr->getEmailAddress());
 	}
 
+	/**
+	 * Retrieve a Contact by EmailAddress.
+	 */
 	public function testRetrieveByEmail() {
 		// TODO create contact here so we don't need to rely on USER_ONE_EMAIL
 		$cr = new ContactResource();
@@ -38,6 +50,9 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals(1, $cr->getId());
 	}
 
+	/**
+	 * Retrieve all Contacts.
+	 */
 	public function testRetrieveBulk() {
 		$cr = new ContactResource();
 
@@ -51,6 +66,9 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		}
 	}
 
+	/**
+	 * Retrieve all Contact alltered since a certain time on a certain list.
+	 */
 	public function testRetrieveBulkSinceXByListId() {
 		// store the function start time
 		$time = time();
@@ -79,6 +97,9 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$this->assertContains($cr->getId(), $ids);
 	}
 
+	/**
+	 * Retrieve all Contacts altered since a certain time with a certain status.
+	 */
 	public function testRetrieveBulkSinceXByListType() {
 		$time = time();
 
@@ -175,6 +196,9 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$this->assertContains($cr->getId(), $ids);
 	}
 
+	/**
+	 * Change a Contact's email address.
+	 */
 	public function testUpdateEmailAddress() {
 		$oldAddress = $this->makeEmailAddress();
 
@@ -196,6 +220,9 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals($cr->getId(), $cr2->getId());
 	}
 
+	/**
+	 * Add a Contact to a list.
+	 */
 	public function testUpdateAddToList() {
 		$address = $this->makeEmailAddress();
 
@@ -216,6 +243,9 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$this->assertContains(ContactResource::generateIdString('lists', 2), $cr2->getContactLists());
 	}
 
+	/**
+	 * Remove a Contact from a list.
+	 */
 	public function testUpdateRemoveFromList() {
 		// TODO add an assertion to make sure the correct change is made locallay
 		$address = $this->makeEmailAddress();
@@ -246,6 +276,9 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$this->assertNotContains(ContactResource::generateIdString('lists', 2), $cr3->getContactLists());
 	}
 
+	/**
+	 * Permanently delete a Contact.
+	 */
 	public function testDeletePermanent() {
 		$address = $this->makeEmailAddress();
 
@@ -266,6 +299,10 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals(ContactResource::STATUS_DONOTMAIL, $cr2->getStatus());
 	}
 
+	/**
+	 * Remove a Contact from all lists, but in a way that they can be
+	 * resubscribed later.
+	 */
 	public function testDeleteTemporary() {
 		$address = $this->makeEmailAddress();
 
