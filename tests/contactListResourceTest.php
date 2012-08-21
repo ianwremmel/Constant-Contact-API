@@ -106,6 +106,28 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 	}
 
 	/**
+	 * Retrieve a ContactList by list name.
+	 */
+	public function testRetrieveByName() {
+		// generate the name
+		$name = 'testRetrieveByName' . microtime(TRUE);
+
+		// create the list
+		$clr = new ContactListResource();
+		$clr->setName($name);
+		$clr->create();
+
+		$this->assertNotNull($clr->getId());
+
+		// retrieve a copy of the list
+		$clr2 = new ContactListResource();
+		$clr2->setName($name);
+		$clr2->retrieve();
+
+		$this->assertEquals($clr->getId(), $clr2->getId());
+	}
+
+	/**
 	 * Retrieve all ContactLists.
 	 */
 	public function testRetrieveBulk() {
