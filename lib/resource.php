@@ -7,6 +7,30 @@ abstract class Resource implements ICrud{
 	const ACTION_BY_CONTACT = 'ACTION_BY_CONTACT';
 
 	/**
+	 * API Username
+	 * @var string
+	 */
+	protected $username = NULL;
+
+	/**
+	 * API Password
+	 * @var string
+	 */
+	protected $password = NULL;
+
+	/**
+	 * API Password
+	 * @var string
+	 */
+	protected $apiKey = NULL;
+
+	/**
+	 * Maps plural XML entity names to their singular child entity names.
+	 * @var array
+	 */
+	protected $itemNodeNames = array();
+
+	/**
 	 * Generates a URI for a particular Constant Contact resource.
 	 * @param string $endpoint The resource type (e.g. 'lists', 'contacts', etd)
 	 * @param mixed $id a means by which to identify the resource.  Most of the
@@ -14,7 +38,7 @@ abstract class Resource implements ICrud{
 	 * specifying a contact by email address), may be a query string.
 	 */
 	public static function generateIdString($endpoint, $id) {
-		return 'http://' . CC_API_URL . '/' . CC_API_USERNAME . '/' . $endpoint . '/' . $id;
+		return 'http://' . CC_API_URL . '/' . $this->username . '/' . $endpoint . '/' . $id;
 	}
 
 	/**
@@ -93,12 +117,25 @@ abstract class Resource implements ICrud{
 	}
 
 	/**
-	 * Constructor.  Doesn't do anything except exist so that derived classes
-	 * may invoked parent::__construct() in their own constructors for future
-	 * proofing.
+	 * Constructor. Accepts API credentials. if API credentils are not supplied,
+	 * attempts to fall back to constants.
 	 */
-	public function __construct() {
-
+	public function __construct($username = NULL, $password = NULL, $apiKey = NULL) {
+		//
+		$args = func_get_args();
+		if (count($args) === 3 && $username !== NULL && $password !== NULL && $apiKey !== NULL) {
+			$this->username = $username;
+			$this->password = $password;
+			$this->apiKey = $apiKey;
+		}
+		else if (defined('CC_API_USERNAME') && defined('CC_API_PASSWORD') && defined('CC_API_KEY')) {
+			$this->username = CC_API_USERNAME;
+			$this->password = CC_API_PASSWORD;
+			$this->apiKey = CC_API_KEY;
+		}
+		else {
+			throw new RuntimeException('No credentials specified for Constant Contact API');
+		}
 	}
 
 	/**
@@ -317,7 +354,7 @@ abstract class Resource implements ICrud{
 	 * @param string $urlSuffix suffix to append to the URL after the id (if it exists) is appended.  Used by ContactListResource::members and ContactResource::events
 	 */
 	protected function twist($urlSuffix = NULL) {
-		$url = 'https://' . CC_API_URL . '/' . CC_API_USERNAME . '/' . $this->endpoint;
+		$url = 'https://' . CC_API_URL . '/' . $this->username . '/' . $this->endpoint;
 		// Assumption: if the resource already has an ID, then we'll be
 		// interacting with it explicitly and it always needs to be part of the
 		// URL
@@ -342,7 +379,7 @@ abstract class Resource implements ICrud{
 		// Use Basic Auth
 		// TODO switch to OAuth
 		curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-		curl_setopt($ch, CURLOPT_USERPWD, CC_API_KEY . '%' . CC_API_USERNAME . ':' . CC_API_PASSWORD);
+		curl_setopt($ch, CURLOPT_USERPWD, $this->apiKey . '%' . $this->username . ':' . $this->password);
 
 		// Set cURL to return the response instead of printing it
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
