@@ -16,6 +16,9 @@ You'll need a Constant Contact username, password, and API key. All can be gotte
 
 The tests generally provide clear example on how to execute basic actions like creating Contacts or Contact Lists.
 
+### Configuration
+Somewhere in your code, you'll need to define CC_API_KEY, CC_API_USERNAME, and CC_API_PASSWORD. See Running the Tests for more information on how to get these values.
+
 ### Magic Methods
 The majority of the property manipulation methods (e.g. getters and setters) are implemented via __call(). As such, the property names are not documented within the code; at this time, the easiest way to figure out all of the method names is to point a web browser at a Constant Contact resource and take a look at the XML.
 
@@ -23,7 +26,7 @@ The Resource can be accessed via HTTP Basic Auth by visiting the URI below.
 -RESOURCETYPE will be one of 'lists', 'contacts', etc
 -IDENTIFIER will typically be numeric
 
-https://USERNAME%APIKEY:PASSWORD@api.constantcontact.com/ws/customers/USERNAME/RESOURCETYPE/IDENTIFIER
+https://USERNAME%APIKEY:PASSWORD\@api.constantcontact.com/ws/customers/USERNAME/RESOURCETYPE/IDENTIFIER
 
 ### Bulk Retrieval
 The classes in the lib/resource directory represent the various resources provided by Constant Contact. Typically, an instance of a resource represents a single resource in Constant Contact, but if no identifier has been set on the local instance, then a call to retrieve() will return all of the instances of that type.
