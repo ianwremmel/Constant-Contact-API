@@ -13,17 +13,6 @@ abstract class Resource implements ICrud{
 	 * STATIC METHODS
 	\**************************************************************************/
 	/**
-	 * Generates a URI for a particular Constant Contact resource.
-	 * @param string $endpoint The resource type (e.g. 'lists', 'contacts', etd)
-	 * @param mixed $id a means by which to identify the resource.  Most of the
-	 * time, this will be a numeric identifier, but in certain cases (e.g.
-	 * specifying a contact by email address), may be a query string.
-	 */
-	public static function generateIdString($endpoint, $id) {
-		return 'http://' . CC_API_URL . '/' . $this->username . '/' . $endpoint . '/' . $id;
-	}
-
-	/**
 	 * Retrieves the identifying component of a URI.
 	 * @param string $idString a resource URI.
 	 */
@@ -271,6 +260,16 @@ abstract class Resource implements ICrud{
 		return $entry->asXML();
 	}
 
+	/**
+	 * Generates a URI for a particular Constant Contact resource.
+	 * @param string $endpoint The resource type (e.g. 'lists', 'contacts', etd)
+	 * @param mixed $id a means by which to identify the resource.  Most of the
+	 * time, this will be a numeric identifier, but in certain cases (e.g.
+	 * specifying a contact by email address), may be a query string.
+	 */
+	public function generateIdString($endpoint, $id) {
+		return 'http://' . CC_API_URL . '/' . $this->username . '/' . $endpoint . '/' . $id;
+	}
 	/**************************************************************************\
 	 * PROPERTIES
 	\**************************************************************************/

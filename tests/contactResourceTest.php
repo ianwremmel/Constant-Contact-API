@@ -240,7 +240,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$cr2->setEmailAddress($address);
 		$cr2->retrieve();
 
-		$this->assertContains(ContactResource::generateIdString('lists', 2), $cr2->getContactLists());
+		$this->assertContains($cr->generateIdString('lists', 2), $cr2->getContactLists());
 	}
 
 	/**
@@ -264,7 +264,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$cr2->setEmailAddress($address);
 		$cr2->retrieve();
 
-		$this->assertContains(ContactResource::generateIdString('lists', 2), $cr2->getContactLists());
+		$this->assertContains($cr->generateIdString('lists', 2), $cr2->getContactLists());
 
 		$cr2->removeList(2);
 		$cr2->update();
@@ -273,7 +273,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$cr3->setEmailAddress($address);
 		$cr3->retrieve();
 
-		$this->assertNotContains(ContactResource::generateIdString('lists', 2), $cr3->getContactLists());
+		$this->assertNotContains($cr->generateIdString('lists', 2), $cr3->getContactLists());
 	}
 
 	/**
