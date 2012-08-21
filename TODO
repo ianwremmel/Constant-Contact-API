@@ -5,3 +5,4 @@ Add helpers
 Refactor tests so that they can be run against a live account with minimal
 pollution or destruction
 Refactor tests to reduce duplicate code
+Refactor Resource classes so they necessarily need to rely on define()ed constants for API credentials
