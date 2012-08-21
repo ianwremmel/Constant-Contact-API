@@ -6,26 +6,35 @@ abstract class Resource implements ICrud{
 	const ACTION_BY_CUSTOMER = 'ACTION_BY_CUSTOMER';
 	const ACTION_BY_CONTACT = 'ACTION_BY_CONTACT';
 
-	public static function prettyPrintXml($xml) {
-		$dom = @DOMDocument::loadXML($xml);
-		if (!empty($dom)) {
-			$dom->formatOutput = TRUE;
-			return $dom->saveXML();
-		}
-	}
-
+	/**
+	 * Generates a URI for a particular Constant Contact resource.
+	 * @param string $endpoint The resource type (e.g. 'lists', 'contacts', etd)
+	 * @param mixed $id a means by which to identify the resource.  Most of the
+	 * time, this will be a numeric identifier, but in certain cases (e.g.
+	 * specifying a contact by email address), may be a query string.
+	 */
 	public static function generateIdString($endpoint, $id) {
 		return 'http://' . CC_API_URL . '/' . CC_API_USERNAME . '/' . $endpoint . '/' . $id;
 	}
 
+	/**
+	 * Retrieves the identifying component of a URI.
+	 * @param string $idString a resource URI.
+	 */
 	public static function extractIdFromString($idString) {
 		$offset = strrpos($idString, '/') + 1;
 		$id = substr($idString, $offset);
 		return $id;
 	}
 
+	/**
+	 * Stores all of the Resource's fields.
+	 */
 	protected $data = array();
 
+	/**
+	 * Creates the magic methods get, set, add, and rem.
+	 */
 	public function __call($method, $args) {
 		$action = substr($method, 0, 3);
 		$property = substr($method, 3);
@@ -83,11 +92,18 @@ abstract class Resource implements ICrud{
 		}
 	}
 
+	/**
+	 * Constructor.  Doesn't do anything except exist so that derived classes
+	 * may invoked parent::__construct() in their own constructors for future
+	 * proofing.
+	 */
 	public function __construct() {
-		// exists so that all derived classes can call parent::__construct to
-		// for future-proofing.
+
 	}
 
+	/**
+	 * POSTs a resource into Constant Contact.
+	 */
 	public function create() {
 		$ch = $this->twist();
 
@@ -116,7 +132,11 @@ abstract class Resource implements ICrud{
 	}
 
 	/**
-	 * @param SimpleXMLElement $xml
+	 * Parses a SimpleXMLElement into a local copy of a Constant Contact
+	 * resource.  Does not directly interact with Constant Contact.
+	 * @param SimpleXMLElement $xml the XML to parse.
+	 * @todo createFromXml needs a name that won't be confused with the create()
+	 * CRUD operation.
 	 */
 	public function createFromXml(SimpleXMLElement $xml) {
 		// Then, make sure we use the primary id from here on out
@@ -200,7 +220,11 @@ abstract class Resource implements ICrud{
 	}
 
 	/**
-	 * @param boolena $full Only used in bulk mode.  If TRUE, retrieve() will be
+	 * GETs a resource from Constant Contact. If the 'id' field is set on $this,
+	 * retrieve() will attempt to retrieve a single resource.  If not,
+	 * retrieve() will operate in bulk mode and attempt to retrieve all
+	 * resources (of the appropriate type).
+	 * @param boolean $full Only used in bulk mode.  If TRUE, retrieve() will be
 	 * called for each returned resource.  Note: this may be expensive.
 	 */
 	public function retrieve($full = FALSE) {
@@ -255,6 +279,9 @@ abstract class Resource implements ICrud{
 		}
 	}
 
+	/**
+	 * PUTs an object into Constant Contact.
+	 */
 	public function update() {
 		$ch = $this->twist();
 
@@ -272,6 +299,9 @@ abstract class Resource implements ICrud{
 		$this->execute($ch, 204);
 	}
 
+	/**
+	 * DELETEs a Constant Contact resource.
+	 */
 	public function delete() {
 		$ch = $this->twist();
 
@@ -328,6 +358,9 @@ abstract class Resource implements ICrud{
 		return $ch;
 	}
 
+	/**
+	 * Executes a cURL session and checks the response code.
+	 */
 	protected function execute($ch, $expectedCode = 200) {
 		$response = curl_exec($ch);
 		$info = curl_getinfo($ch);
@@ -348,6 +381,8 @@ abstract class Resource implements ICrud{
 	}
 
 	/**
+	 * Converts $this into the atom-feed-embedded-custom-xml-format that the
+	 * Constant Contact API requires.
 	 * @todo clean up __toXml() to improve readability
 	 */
 	public function __toXml() {
@@ -400,11 +435,21 @@ abstract class Resource implements ICrud{
 		return $entry->asXML();
 	}
 
+	/**
+	 * Determines whether an array is associative based on a now-lost Stack
+	 * Overflow post.
+	 * @paramm array $array the array to check
+	 * @return boolean whether or not the array is associative.
+	 */
 	static function is_assoc($array) {
 		return (bool)count(array_filter(array_keys($array), 'is_string'));
 	}
 
 	/**
+	 * Generic method for returning the set of objects reference by this
+	 * resource.  This method should be wrapped by semantically meaningful
+	 * methods in derived classes (e.g., ContactList::members()).
+	 * @see ContactList::members()
 	 * @param boolean $full If true, will call retrieve for each retrieved
 	 * returned resource (note: this may be expensive).
 	 */
