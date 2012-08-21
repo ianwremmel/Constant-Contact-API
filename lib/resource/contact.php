@@ -2,6 +2,9 @@
 
 require_once 'lib/resource.php';
 
+/**
+ * Represents a Contact.
+ */
 class ContactResource extends Resource {
 	protected $endpoint = 'contacts';
 	protected $objectType = 'Contact';
@@ -21,6 +24,11 @@ class ContactResource extends Resource {
 	/*************************************************************************\
 	 * PUBLIC FUNCTIONS
 	\*************************************************************************/
+	/**
+	 * Add the Contact to the specified list using just the list id instead of
+	 * the list's full URI.
+	 * @param integer $list A list ID
+	 */
 	public function addList($list) {
 		if (is_numeric($list)) {
 			$list = self::generateIdString('lists', $list);
@@ -29,6 +37,11 @@ class ContactResource extends Resource {
 		$this->addContactList($list);
 	}
 
+	/**
+	 * Remove the Contact from the specified list using just the list id
+	 * instead of the list's full URI.
+	 * @param integer $list A list ID
+	 */
 	public function removeList($list) {
 		if (is_numeric($list)) {
 			$list = self::generateIdString('lists', $list);
@@ -40,6 +53,9 @@ class ContactResource extends Resource {
 	/*************************************************************************\
 	 * CRUD FUNCTIONS
 	\*************************************************************************/
+	/**
+	 * @see Resource::create()
+	 */
 	public function create() {
 		if (is_null($this->getEmailAddress())) {
 			throw new RuntimeException('EmailAddress must be set before calling create().');
@@ -60,6 +76,7 @@ class ContactResource extends Resource {
 	/**
 	 * Retries a contact by email address or id.  Note: if using email address,
 	 * two calls will be made to Constant Contact.
+	 * @see Resource::retrieve()
 	 */
 	public function retrieve($full = FALSE) {
 		if (is_null($this->getId())) {
@@ -87,15 +104,12 @@ class ContactResource extends Resource {
 
 		parent::retrieve();
 	}
-//
-	// public function update() {
-//
-	// }
-//
+
 	/**
-	 * @var boolean $permanent If true, will move the contact to the Do Not
-	 * Email list.  Once on this list, contacts cannot be readded to any list.
+	 * @param boolean $permanent If true, will move the contact to the Do Not
+	 * Email list.  Once on this list, contacts cannot be added to any list.
 	 * If false, they will be added to the Removed list which can be undone.
+	 * @see Resource::delete()
 	 */
 	public function delete($permanent = FALSE) {
 		if ($permanent) {
