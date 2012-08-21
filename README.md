@@ -25,6 +25,9 @@ The Resource can be accessed via HTTP Basic Auth by visiting the URI below.
 
 https://USERNAME%APIKEY:PASSWORD@api.constantcontact.com/ws/customers/USERNAME/RESOURCETYPE/IDENTIFIER
 
+### Bulk Retrieval
+The classes in the lib/resource directory represent the various resources provided by Constant Contact. Typically, an instance of a resource represents a single resource in Constant Contact, but if no identifier has been set on the local instance, then a call to retrieve() will return all of the instances of that type.
+
 Running the Tests
 -----------------
 
