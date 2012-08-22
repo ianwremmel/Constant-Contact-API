@@ -1,22 +1,23 @@
 <?php
 
 require_once 'lib/resource/contact.php';
-require_once 'config.php';
+require_once 'abstract.php';
 
-class ContactResourceTest extends PHPUnit_Framework_TestCase {
+class ContactResourceTest extends ConstantContactTestCase {
 
 	/**
 	 * Creates a new unique email address.
+	 * @deprecated use parent::makeEmailAddress directly.
 	 */
 	protected function makeEmailAddress() {
-		return 'test-' . microtime(TRUE) . '@mailinator.com';
+		return parent::makeEmailAddress('test');
 	}
 
 	/**
 	 * Create a new Contact with the minimum set of required fields.
 	 */
 	public function testCreate() {
-		$cr = new ContactResource();
+		$cr = $this->makeResource('ContactResource');
 		$cr->setEmailAddress($this->makeEmailAddress());
 		$cr->setOptInSource(Resource::ACTION_BY_CUSTOMER);
 		$cr->addList(1);
@@ -29,7 +30,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 	 * Retrieve a Contact by numeric ID.
 	 */
 	public function testRetrieveById() {
-		$cr = new ContactResource();
+		$cr = $this->makeResource('ContactResource');
 		$cr->setId(1);
 
 		$cr->retrieve();
@@ -42,7 +43,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 	 */
 	public function testRetrieveByEmail() {
 		// TODO create contact here so we don't need to rely on USER_ONE_EMAIL
-		$cr = new ContactResource();
+		$cr = $this->makeResource('ContactResource');
 		$cr->setEmailAddress(USER_ONE_EMAIL);
 
 		$cr->retrieve();
@@ -54,7 +55,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 	 * Retrieve all Contacts.
 	 */
 	public function testRetrieveBulk() {
-		$cr = new ContactResource();
+		$cr = $this->makeResource('ContactResource');
 
 		$contacts = $cr->retrieve();
 
@@ -73,13 +74,13 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		// store the function start time
 		$time = time();
 
-		$cr = new ContactResource();
+		$cr = $this->makeResource('ContactResource');
 		$cr->setEmailAddress('testRetrieveBulkSinceXByListId' . microtime(TRUE) . '@mailinator.com');
 		$cr->setOptInSource(Resource::ACTION_BY_CUSTOMER);
 		$cr->addList(1);
 		$cr->create();
 
-		$crBulk = new ContactResource();
+		$crBulk = $this->makeResource('ContactResource');
 		$crBulk->setupdatedsince(date(DATE_ATOM, $time));
 		$crBulk->setlistid(1);
 		$updates = $crBulk->retrieve();
@@ -104,7 +105,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$time = time();
 
 		// Create a contact
-		$cr = new ContactResource();
+		$cr = $this->makeResource('ContactResource');
 		$cr->setEmailAddress('testRetrieveBulkSinceXByListType' . microtime(TRUE) . '@mailinator.com');
 		$cr->addList(1);
 		$cr->setOptInSource(Resource::ACTION_BY_CUSTOMER);
@@ -114,7 +115,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		// make sure it's active
 		$this->assertEquals(ContactResource::STATUS_ACTIVE, $cr->getStatus());
 		// make sure it comes back via bulk retrieve
-		$crBulk = new ContactResource();
+		$crBulk = $this->makeResource('ContactResource');
 		$crBulk->setupdatedsince(date(DATE_ATOM, $time));
 		$crBulk->setlisttype(ContactResource::LIST_TYPE_ACTIVE);
 
@@ -202,7 +203,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 	public function testUpdateEmailAddress() {
 		$oldAddress = $this->makeEmailAddress();
 
-		$cr = new ContactResource();
+		$cr = $this->makeResource('ContactResource');
 		$cr->setEmailAddress($oldAddress);
 		$cr->addList(1);
 		$cr->setOptInSource(Resource::ACTION_BY_CUSTOMER);
@@ -212,7 +213,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$cr->setEmailAddress($newAddress);
 		$cr->update();
 
-		$cr2 = new ContactResource();
+		$cr2 = $this->makeResource('ContactResource');
 		$cr2->setEmailAddress($newAddress);
 		$cr2->retrieve();
 
@@ -226,7 +227,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 	public function testUpdateAddToList() {
 		$address = $this->makeEmailAddress();
 
-		$cr = new ContactResource();
+		$cr = $this->makeResource('ContactResource');
 		$cr->setEmailAddress($address);
 		$cr->addList(1);
 		$cr->setOptInSource(Resource::ACTION_BY_CUSTOMER);
@@ -236,7 +237,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$cr->addList(2);
 		$cr->update();
 
-		$cr2 = new ContactResource();
+		$cr2 = $this->makeResource('ContactResource');
 		$cr2->setEmailAddress($address);
 		$cr2->retrieve();
 
@@ -250,7 +251,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		// TODO add an assertion to make sure the correct change is made locallay
 		$address = $this->makeEmailAddress();
 
-		$cr = new ContactResource();
+		$cr = $this->makeResource('ContactResource');
 		$cr->setEmailAddress($address);
 		$cr->addList(1);
 		$cr->setOptInSource(Resource::ACTION_BY_CUSTOMER);
@@ -260,7 +261,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$cr->addList(2);
 		$cr->update();
 
-		$cr2 = new ContactResource();
+		$cr2 = $this->makeResource('ContactResource');
 		$cr2->setEmailAddress($address);
 		$cr2->retrieve();
 
@@ -269,7 +270,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$cr2->removeList(2);
 		$cr2->update();
 
-		$cr3 = new ContactResource();
+		$cr3 = $this->makeResource('ContactResource');
 		$cr3->setEmailAddress($address);
 		$cr3->retrieve();
 
@@ -282,7 +283,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 	public function testDeletePermanent() {
 		$address = $this->makeEmailAddress();
 
-		$cr = new ContactResource();
+		$cr = $this->makeResource('ContactResource');
 		$cr->setEmailAddress($address);
 		$cr->addList(1);
 		$cr->setOptInSource(Resource::ACTION_BY_CUSTOMER);
@@ -291,7 +292,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$id = $cr->getId();
 		$cr->delete(TRUE);
 
-		$cr2 = new ContactResource();
+		$cr2 = $this->makeResource('ContactResource');
 		$cr2->setEmailAddress($address);
 		$cr2->retrieve();
 
@@ -306,7 +307,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 	public function testDeleteTemporary() {
 		$address = $this->makeEmailAddress();
 
-		$cr = new ContactResource();
+		$cr = $this->makeResource('ContactResource');
 		$cr->setEmailAddress($address);
 		$cr->addList(1);
 		$cr->setOptInSource(Resource::ACTION_BY_CUSTOMER);
@@ -315,7 +316,7 @@ class ContactResourceTest extends PHPUnit_Framework_TestCase {
 		$id = $cr->getId();
 		$cr->delete();
 
-		$cr2 = new ContactResource();
+		$cr2 = $this->makeResource('ContactResource');
 		$cr2->setEmailAddress($address);
 		$cr2->retrieve();
 

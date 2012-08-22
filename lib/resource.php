@@ -371,7 +371,7 @@ abstract class Resource implements ICrud {
 				$xml = new SimpleXMLElement($response);
 
 				foreach ($xml->entry as $entry) {
-					$resource = new $class(); /* @var $resource Resource */
+					$resource = new $class($this->username, $this->password, $this->apiKey); /* @var $resource Resource */
 					$resource->createFromXml($entry);
 					if ($full) {
 						$resource->retrieve();
@@ -530,7 +530,7 @@ abstract class Resource implements ICrud {
 			$xml = new SimpleXMLElement($response);
 
 			foreach ($xml->entry as $entry) {
-				$resource = new $resourceClass();
+				$resource = new $resourceClass($this->username, $this->password, $this->apiKey);
 				$resource->createFromXml($entry);
 				if ($full) {
 					$resource->retrieve();

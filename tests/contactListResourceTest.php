@@ -2,14 +2,14 @@
 
 require_once 'lib/resource/contact.php';
 require_once 'lib/resource/contact_list.php';
-require_once 'config.php';
+require_once 'abstract.php';
 
-class ContactListResourceTest extends PHPUnit_Framework_TestCase {
+class ContactListResourceTest extends ConstantContactTestCase {
 	/**
 	 * Create a ContactList with the minimum set of required fields.
 	 */
 	public function testCreate() {
-		$clr = new ContactListResource();
+		$clr = $this->makeResource('ContactListResource');
 		$clr->setName('testCreate' . microtime(true));
 		$clr->create();
 
@@ -20,11 +20,11 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 	 * Toggle the OptInDefault field with the update action.
 	 */
 	public function testUpdateOptInDefault() {
-		$clr = new ContactListResource();
+		$clr = $this->makeResource('ContactListResource');
 		$clr->setName('testUpdateOptInDefault' . microtime(true));
 		$clr->create();
 
-		$clr2 = new ContactListResource();
+		$clr2 = $this->makeResource('ContactListResource');
 		$clr2->setId($clr->getId());
 		$clr2->retrieve();
 
@@ -48,11 +48,11 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 	 */
 	public function testUpdateName() {
 		$time = microtime(true);
-		$clr = new ContactListResource();
+		$clr = $this->makeResource('ContactListResource');
 		$clr->setName('testUpdateName' . $time);
 		$clr->create();
 
-		$clr2 = new ContactListResource();
+		$clr2 = $this->makeResource('ContactListResource');
 		$clr2->setId($clr->getId());
 		$clr2->retrieve();
 
@@ -70,11 +70,11 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 	 * Change the SortOrder field with the update action.
 	 */
 	public function testUpdateSortOrder() {
-		$clr = new ContactListResource();
+		$clr = $this->makeResource('ContactListResource');
 		$clr->setName('testUpdateSortOrder' . microtime(true));
 		$clr->create();
 
-		$clr2 = new ContactListResource();
+		$clr2 = $this->makeResource('ContactListResource');
 		$clr2->setId($clr->getId());
 		$clr2->retrieve();
 
@@ -93,11 +93,11 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 	 * Retrieve a ContactList.
 	 */
 	public function testRetrieve() {
-		$clr = new ContactListResource();
+		$clr = $this->makeResource('ContactListResource');
 		$clr->setName('testRetrieve' . microtime(true));
 		$clr->create();
 
-		$clr2 = new ContactListResource();
+		$clr2 = $this->makeResource('ContactListResource');
 		$clr2->setId($clr->getId());
 		$clr2->retrieve();
 
@@ -113,14 +113,14 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 		$name = 'testRetrieveByName' . microtime(TRUE);
 
 		// create the list
-		$clr = new ContactListResource();
+		$clr = $this->makeResource('ContactListResource');
 		$clr->setName($name);
 		$clr->create();
 
 		$this->assertNotNull($clr->getId());
 
 		// retrieve a copy of the list
-		$clr2 = new ContactListResource();
+		$clr2 = $this->makeResource('ContactListResource');
 		$clr2->setName($name);
 		$clr2->retrieve();
 
@@ -131,7 +131,7 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 	 * Retrieve all ContactLists.
 	 */
 	public function testRetrieveBulk() {
-		$clr = new ContactListResource();
+		$clr = $this->makeResource('ContactListResource');
 		$lists = $clr->retrieve();
 
 		$this->assertTrue(is_array($lists));
@@ -146,11 +146,11 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 	 * Delete a ContactList.
 	 */
 	public function testDelete() {
-		$clr = new ContactListResource();
+		$clr = $this->makeResource('ContactListResource');
 		$clr->setName('testDelete' . microtime(true));
 		$clr->create();
 
-		$clr2 = new ContactListResource();
+		$clr2 = $this->makeResource('ContactListResource');
 		$clr2->setId($clr->getId());
 
 		$this->setExpectedException('UnexpectedValueException', 'Response code 404 did not match 200.');
@@ -165,12 +165,12 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 	 */
 	public function testMembers() {
 		// Create a list
-		$clr = new ContactListResource();
+		$clr = $this->makeResource('ContactListResource');
 		$clr->setName('testMembers' . microtime(TRUE));
 		$clr->create();
 
 		// Add a contact to the list
-		$cr = new ContactResource();
+		$cr = $this->makeResource('ContactResource');
 		$cr->setEmailAddress('testMembers' . microtime(TRUE) . '@mailinator.com');
 		$cr->setOptInSource(ContactResource::ACTION_BY_CUSTOMER);
 		$cr->addList($clr->getId());
@@ -201,7 +201,7 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 		// Add a second contact to the list and repeat
 		// TODO everything below here probably belongs in a separate test
 		// Add a contact to the list
-		$cr = new ContactResource();
+		$cr = $this->makeResource('ContactResource');
 		$cr->setEmailAddress('testMembers' . microtime(TRUE) . '@mailinator.com');
 		$cr->setOptInSource(ContactResource::ACTION_BY_CUSTOMER);
 		$cr->addList($clr->getId());
@@ -233,12 +233,12 @@ class ContactListResourceTest extends PHPUnit_Framework_TestCase {
 	 */
 	public function testMembersFull() {
 		// Create a list
-		$clr = new ContactListResource();
+		$clr = $this->makeResource('ContactListResource');
 		$clr->setName('testMembers' . microtime(TRUE));
 		$clr->create();
 
 		// Add a contact to the list
-		$cr = new ContactResource();
+		$cr = $this->makeResource('ContactResource');
 		$cr->setEmailAddress('testMembers' . microtime(TRUE) . '@mailinator.com');
 		$cr->setOptInSource(ContactResource::ACTION_BY_CUSTOMER);
 		$cr->addList($clr->getId());

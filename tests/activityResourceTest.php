@@ -1,9 +1,9 @@
 <?php
 
 require_once 'lib/resource/activity.php';
-require_once 'config.php';
+require_once 'abstract.php';
 
-class ActivityResourceTest extends PHPUnit_Framework_TestCase {
+class ActivityResourceTest extends ConstantContactTestCase {
 	/**
 	 * Create an activity.
 	 */
@@ -22,7 +22,7 @@ class ActivityResourceTest extends PHPUnit_Framework_TestCase {
 	 * Retrieve all activities.
 	 */
 	public function testRetrieveBulk() {
-		$ar = new ActivityResource();
+		$ar = $this->makeResource('ActivityResource');
 		$activities = $ar->retrieve();
 
 		$this->assertTrue(is_array($activities));
@@ -32,7 +32,7 @@ class ActivityResourceTest extends PHPUnit_Framework_TestCase {
 	 * Update is not a valid action.
 	 */
 	public function testUpdateAlwaysThrows() {
-		$ar = new ActivityResource();
+		$ar = $this->makeResource('ActivityResource');
 
 		$this->setExpectedException('BadMethodCallException');
 		$ar->update();
@@ -42,7 +42,7 @@ class ActivityResourceTest extends PHPUnit_Framework_TestCase {
 	 * Delete is not a valid action.
 	 */
 	public function testDeleteAlwaysThrows() {
-		$ar = new ActivityResource();
+		$ar = $this->makeResource('ActivityResource');
 
 		$this->setExpectedException('BadMethodCallException');
 		$ar->delete();
