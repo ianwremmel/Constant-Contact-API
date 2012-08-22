@@ -357,14 +357,13 @@ abstract class Resource implements ICrud {
 			foreach ($this->data as $key => $value) {
 				$query[] = urlencode($key) . '=' . urlencode($value);
 			}
-			$query = empty($query) ? NULL : implode('&', $query);
+			$query = '?' . (empty($query) ? NULL : implode('&', $query));
 
 			$class = get_class($this);
 			$resources = array();
 
-			$querystring = $query;
 			do {
-				$ch = $this->twist('?' . $querystring);
+				$ch = $this->twist($query);
 				curl_setopt($ch, CURLOPT_HTTPGET, TRUE);
 
 				$response = $this->execute($ch, 200);
@@ -380,7 +379,7 @@ abstract class Resource implements ICrud {
 				}
 
 				$next = $this->findNextLink($xml);
-				$querystring = $query ? $query . '&' . $next : $next;
+				$query = $next;
 			} while (!is_null($next));
 
 			return $resources;
@@ -538,7 +537,7 @@ abstract class Resource implements ICrud {
 				$resources[] = $resource;
 			}
 			$next = $this->findNextLink($xml);
-			$querystring = $uriSuffix . '?' . $next;
+			$querystring = $next;
 
 		} while (!is_null($next));
 
@@ -569,11 +568,11 @@ abstract class Resource implements ICrud {
 		foreach ($links as $link) {
 			if (array_key_exists('rel', $link['@attributes']) && $link['@attributes']['rel'] === 'next') {
 				$uri = $link['@attributes']['href'];
-				return substr($uri, strpos($uri, '?') + 1);
+				return substr($uri, strpos($uri, '?'));
 			}
 		}
 
-		// If haven't returned yet, return NULL
+		// If we haven't returned yet, return NULL
 		return NULL;
 	}
 }
