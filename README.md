@@ -41,3 +41,6 @@ Running the Tests
 	- CC_API_USERNAME and CC_API_PASSWORD are the username and password that you use to log into Constant Contact.
 	- USER_ONE_EMAIL is the email address used to sign up for the Constant Contact account.  This requirement will be removed in the future.
 2. Execute PHPUnit against the tests directory.
+
+### Failures
+ContactResourceTest::testRetrieveBulkSinceXByListType and ContactResourceTest::testRetrieveBulkSinceXByListId fail from time to time. This seems to be a timing issue and can generally be ignored if all other tests pass.
