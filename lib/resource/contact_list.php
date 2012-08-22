@@ -49,4 +49,43 @@ class ContactListResource extends Resource {
 	public function members($full = FALSE) {
 		return $this->objects('/members', 'ContactResource', 'resource/contact.php', $full);
 	}
+
+	public function retrieve() {
+		// if ID is not set, we'll definitely need to perform a bulk operation
+		if (is_null($this->getId())) {
+			$lists = parent::retrieve();
+			// if Name is not set, we simply need to return $lists
+			if (is_null($this->getName())) {
+				return $lists;
+			}
+
+			// otherwise, we need to find the list identified by Name and finish
+			// retrieving it
+			// The list won't be sort by name, so it's linear search time.
+			$name = $this->getName();
+			foreach ($lists as $list) {
+				/* @var $list ContactListResource */
+				if ($list->getName() === $name) {
+					// Surprisingly, this actually works (let's hope it also
+					// works in PHP 5.2)
+					$this->data = $list->data;
+					return;
+				}
+			}
+
+			// if we made it this far, no list with the specified name exists.
+			throw new RuntimeException('No list found with name ' . $name);
+		}
+
+		parent::retrieve();
+	}
 }
+
+
+
+
+
+
+
+
+

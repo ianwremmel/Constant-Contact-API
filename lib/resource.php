@@ -353,24 +353,31 @@ abstract class Resource implements ICrud{
 			foreach ($this->data as $key => $value) {
 				$query[] = urlencode($key) . '=' . urlencode($value);
 			}
-			$uriSuffix = '?' . implode('&', $query);
-
-			$ch = $this->twist($uriSuffix);
-			curl_setopt($ch, CURLOPT_HTTPGET, TRUE);
-
-			$response = $this->execute($ch, 200);
-			$xml = new SimpleXMLElement($response);
+			$query = empty($query) ? NULL : implode('&', $query);
 
 			$class = get_class($this);
 			$resources = array();
-			foreach ($xml->entry as $entry) {
-				$resource = new $class(); /* @var $resource Resource */
-				$resource->createFromXml($entry);
-				if ($full) {
-					$resource->retrieve();
+
+			$querystring = $query;
+			do {
+				$ch = $this->twist('?' . $querystring);
+				curl_setopt($ch, CURLOPT_HTTPGET, TRUE);
+
+				$response = $this->execute($ch, 200);
+				$xml = new SimpleXMLElement($response);
+
+				foreach ($xml->entry as $entry) {
+					$resource = new $class(); /* @var $resource Resource */
+					$resource->createFromXml($entry);
+					if ($full) {
+						$resource->retrieve();
+					}
+					$resources[] = $resource;
 				}
-				$resources[] = $resource;
-			}
+
+				$next = $this->findNextLink($xml);
+				$querystring = $query ? $query . '&' . $next : $next;
+			} while (!is_null($next));
 
 			return $resources;
 		}
@@ -509,22 +516,60 @@ abstract class Resource implements ICrud{
 	protected function objects($uriSuffix, $resourceClass, $resourceFile, $full = FALSE) {
 		require_once($resourceFile);
 
-		$ch = $this->twist($uriSuffix);
-		$response = $this->execute($ch);
-
-		$xml = new SimpleXMLElement($response);
-
+		$querystring = $uriSuffix;
 		$resources = array();
 
-		foreach ($xml->entry as $entry) {
-			$resource = new $resourceClass();
-			$resource->createFromXml($entry);
-			if ($full) {
-				$resource->retrieve();
+		do {
+			$ch = $this->twist($querystring);
+			$response = $this->execute($ch);
+
+			$xml = new SimpleXMLElement($response);
+
+			foreach ($xml->entry as $entry) {
+				$resource = new $resourceClass();
+				$resource->createFromXml($entry);
+				if ($full) {
+					$resource->retrieve();
+				}
+				$resources[] = $resource;
 			}
-			$resources[] = $resource;
-		}
+			$next = $this->findNextLink($xml);
+			$querystring = $uriSuffix . '?' . $next;
+
+		} while (!is_null($next));
 
 		return $resources;
+	}
+
+	/**
+	 * Finds the element that should (but doesn't seem to) match the xpath
+	 * link[@rel=link]
+	 * @return string|NULL if the link was found, the link is returned,
+	 * otherwise a value of NULL indicates no link could be found.
+	 */
+	protected function findNextLink(SimpleXMLElement $xml) {
+		// since xpath is being uncooperative, we'll convert to an array
+		// to locate the link[@rel="next"] node.
+		$xml = json_decode(json_encode($xml), TRUE);
+
+		// Make sure we always have an array of links to iterate over, even if
+		// there is only one value in the array.
+		if (self::is_assoc($xml['link'])) {
+			$links[] = $xml['link'];
+		}
+		else {
+			$links = $xml['link'];
+		}
+
+		// now, find the link containing the next url
+		foreach ($links as $link) {
+			if (array_key_exists('rel', $link['@attributes']) && $link['@attributes']['rel'] === 'next') {
+				$uri = $link['@attributes']['href'];
+				return substr($uri, strpos($uri, '?') + 1);
+			}
+		}
+
+		// If haven't returned yet, return NULL
+		return NULL;
 	}
 }
