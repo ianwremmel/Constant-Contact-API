@@ -2,12 +2,14 @@
 
 require_once 'crud_interface.php';
 
-abstract class Resource implements ICrud{
+abstract class Resource implements ICrud {
 	/**************************************************************************\
 	 * CONSTANTS
 	\**************************************************************************/
 	const ACTION_BY_CUSTOMER = 'ACTION_BY_CUSTOMER';
 	const ACTION_BY_CONTACT = 'ACTION_BY_CONTACT';
+
+	const CC_API_URL = 'api.constantcontact.com/ws/customers';
 
 	/**************************************************************************\
 	 * STATIC METHODS
@@ -99,22 +101,24 @@ abstract class Resource implements ICrud{
 	 * Constructor. Accepts API credentials. if API credentils are not supplied,
 	 * attempts to fall back to constants.
 	 */
-	public function __construct($username = NULL, $password = NULL, $apiKey = NULL) {
-		//
+	public function __construct($username, $password, $apiKey) {
 		$args = func_get_args();
-		if (count($args) === 3 && $username !== NULL && $password !== NULL && $apiKey !== NULL) {
-			$this->username = $username;
-			$this->password = $password;
-			$this->apiKey = $apiKey;
+
+		if (is_null($username)) {
+			throw new InvalidArgumentException ('$username cannot be NULL');
 		}
-		else if (defined('CC_API_USERNAME') && defined('CC_API_PASSWORD') && defined('CC_API_KEY')) {
-			$this->username = CC_API_USERNAME;
-			$this->password = CC_API_PASSWORD;
-			$this->apiKey = CC_API_KEY;
+
+		if (is_null($password)) {
+			throw new InvalidArgumentException ('$password cannot be NULL');
 		}
-		else {
-			throw new RuntimeException('No credentials specified for Constant Contact API');
+
+		if (is_null($apiKey)) {
+			throw new InvalidArgumentException ('$apiKey cannot be NULL');
 		}
+
+		$this->username = $username;
+		$this->password = $password;
+		$this->apiKey = $apiKey;
 	}
 
 	/**
@@ -268,7 +272,7 @@ abstract class Resource implements ICrud{
 	 * specifying a contact by email address), may be a query string.
 	 */
 	public function generateIdString($endpoint, $id) {
-		return 'http://' . CC_API_URL . '/' . $this->username . '/' . $endpoint . '/' . $id;
+		return 'http://' . self::CC_API_URL . '/' . $this->username . '/' . $endpoint . '/' . $id;
 	}
 	/**************************************************************************\
 	 * PROPERTIES
@@ -442,7 +446,7 @@ abstract class Resource implements ICrud{
 	 * @param string $urlSuffix suffix to append to the URL after the id (if it exists) is appended.  Used by ContactListResource::members and ContactResource::events
 	 */
 	protected function twist($urlSuffix = NULL) {
-		$url = 'https://' . CC_API_URL . '/' . $this->username . '/' . $this->endpoint;
+		$url = 'https://' . self::CC_API_URL . '/' . $this->username . '/' . $this->endpoint;
 		// Assumption: if the resource already has an ID, then we'll be
 		// interacting with it explicitly and it always needs to be part of the
 		// URL

@@ -1,6 +1,5 @@
 <?php
 
-define('CC_API_URL', 'api.constantcontact.com/ws/customers');
 define('CC_API_KEY', '');
 define('CC_API_USERNAME', '');
 define('CC_API_PASSWORD', '');

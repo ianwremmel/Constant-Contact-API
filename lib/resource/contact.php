@@ -1,6 +1,6 @@
 <?php
 
-require_once 'lib/resource.php';
+require_once dirname(dirname(__FILE__)) . '/resource.php';
 
 /**
  * Represents a Contact.
