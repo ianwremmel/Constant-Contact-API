@@ -74,11 +74,26 @@ class ContactResourceTest extends ConstantContactTestCase {
 		// store the function start time
 		$time = time();
 
+		// updatedsince is bucketed into 1 minute windows because DATE_ATOM
+		// doesn't contain a seconds component.  In order to ensure that $time
+		// represents the bucket before the the ContactResource gets created,
+		// we need to wait one full minute to guarantee we're operating in a
+		// new bucket. We can't simply subtract 1 minute from the current
+		// time because Contact Resources from other tests could be returned.
+		// In fact, we should probably have an additional 60 second delay before
+		// store $time to guarantee complete isolation, but this seems good
+		// enough for now.
+		sleep(60);
+
 		$cr = $this->makeResource('ContactResource');
 		$cr->setEmailAddress('testRetrieveBulkSinceXByListId' . microtime(TRUE) . '@mailinator.com');
 		$cr->setOptInSource(Resource::ACTION_BY_CUSTOMER);
 		$cr->addList(1);
 		$cr->create();
+
+		// add artificial delay to make sure clock synchronization doesn't
+		// cause the test to fail
+		sleep(30);
 
 		$crBulk = $this->makeResource('ContactResource');
 		$crBulk->setupdatedsince(date(DATE_ATOM, $time));
@@ -103,6 +118,17 @@ class ContactResourceTest extends ConstantContactTestCase {
 	 */
 	public function testRetrieveBulkSinceXByListType() {
 		$time = time();
+
+		// updatedsince is bucketed into 1 minute windows because DATE_ATOM
+		// doesn't contain a seconds component.  In order to ensure that $time
+		// represents the bucket before the the ContactResource gets created,
+		// we need to wait one full minute to guarantee we're operating in a
+		// new bucket. We can't simply subtract 1 minute from the current
+		// time because Contact Resources from other tests could be returned.
+		// In fact, we should probably have an additional 60 second delay before
+		// store $time to guarantee complete isolation, but this seems good
+		// enough for now.
+		sleep(60);
 
 		// Create a contact
 		$cr = $this->makeResource('ContactResource');
