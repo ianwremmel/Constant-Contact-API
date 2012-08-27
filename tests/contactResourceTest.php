@@ -3,6 +3,14 @@
 require_once 'lib/resource/contact.php';
 require_once 'abstract.php';
 
+/**
+ * @todo need tests for onList()
+ * @todo need to test retrieval of resources that don't exist
+ * @todo need to test creation of resources that already exist
+ * @todo need to rename Delete tests
+ * @todo need to test return from completely deleted when ACTION_BY_CONTACT used
+ *
+ */
 class ContactResourceTest extends ConstantContactTestCase {
 
 	/**
@@ -260,14 +268,14 @@ class ContactResourceTest extends ConstantContactTestCase {
 		$cr->create();
 
 		// TODO remove hardcoded '2' from this test
-		$cr->addList(2);
+		$cr->addList(26);
 		$cr->update();
 
 		$cr2 = $this->makeResource('ContactResource');
 		$cr2->setEmailAddress($address);
 		$cr2->retrieve();
 
-		$this->assertContains($cr->generateIdString('lists', 2), $cr2->getContactLists());
+		$this->assertContains($cr->generateIdString('lists', 26), $cr2->getContactLists());
 	}
 
 	/**
@@ -283,24 +291,23 @@ class ContactResourceTest extends ConstantContactTestCase {
 		$cr->setOptInSource(Resource::ACTION_BY_CUSTOMER);
 		$cr->create();
 
-		// TODO remove hardcoded '2' from this test
-		$cr->addList(2);
-		$cr->update();
-
 		$cr2 = $this->makeResource('ContactResource');
 		$cr2->setEmailAddress($address);
 		$cr2->retrieve();
 
-		$this->assertContains($cr->generateIdString('lists', 2), $cr2->getContactLists());
+		$cr2->addList(26);
+		$cr2->update();
 
-		$cr2->removeList(2);
+		$this->assertContains($cr->generateIdString('lists', 26), $cr2->getContactLists());
+
+		$cr2->removeList(26);
 		$cr2->update();
 
 		$cr3 = $this->makeResource('ContactResource');
 		$cr3->setEmailAddress($address);
 		$cr3->retrieve();
 
-		$this->assertNotContains($cr->generateIdString('lists', 2), $cr3->getContactLists());
+		$this->assertNotContains($cr->generateIdString('lists', 26), $cr3->getContactLists());
 	}
 
 	/**
