@@ -399,6 +399,9 @@ abstract class Resource implements ICrud {
 				// First, the entry is a child of the main object rather than the
 				// main object
 				$xml = $xml->entry;
+				if (empty($xml)) {
+					throw new RuntimeException('Could not retrieve resource with specified parameters.');
+				}
 			}
 
 			$this->createFromXml($xml);
