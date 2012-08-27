@@ -50,6 +50,38 @@ class ContactResource extends Resource {
 		$this->remContactList($list);
 	}
 
+	/**
+	 * Checks if the contact is a member of a list
+	 * @param string|integer $list may be one of a numeric list id, list URI, or list name
+	 */
+	public function onList($list) {
+		// Both Id and EmailAddress will have been set if the contact has been
+		// retrieved.
+		if (is_null($this->getId()) || is_null($this->getEmailAddress())) {
+			throw new RuntimeException('Contact must be retrieved before calling onList().');
+		}
+
+		$lists = $this->getContactLists();
+		if (!is_array($lists)) {
+			return FALSE;
+		}
+
+		// if $list is an ID, turn it into a URI
+		if (is_numeric($list)) {
+			$list = $this->generateIdString('lists', $list);
+		}
+		// otherwise, if it's not a URI, figure out its URI from its name
+		else if (!preg_match('/^http/', $list)) {
+			$clr = new ContactListResource($this->username, $this->password, $this->apiKey);
+			$clr->setName($list);
+			$clr->retrieve();
+
+			$list = $this->generateIdString('lists', $clr->getId());
+		}
+
+		return in_array($list, $lists);
+	}
+
 	/*************************************************************************\
 	 * CRUD FUNCTIONS
 	\*************************************************************************/
