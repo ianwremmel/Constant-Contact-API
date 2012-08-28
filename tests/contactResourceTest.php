@@ -356,4 +356,64 @@ class ContactResourceTest extends ConstantContactTestCase {
 		$this->assertEmpty($cr2->getContactLists());
 		$this->assertEquals(ContactResource::STATUS_REMOVED, $cr2->getStatus());
 	}
+
+	/**
+	 * Confirms that the ACTION_BY_CONTACT flag can be used to opt a customer
+	 * back into a list even if they've previously unsubscribed.
+	 */
+	public function testActionByContact() {
+		$email = $this->makeEmailAddress('testActionByContact');
+
+		// Create a contact
+		$crCreate = $this->makeResource('ContactResource');
+		$crCreate->setEmailAddress($email);
+		$crCreate->setOptInSource(Resource::ACTION_BY_CUSTOMER);
+		$crCreate->addList(1);
+		$crCreate->create();
+
+		$this->assertNotNull($crCreate->getId());
+
+		// Mark the contact as do-not-email
+		$crDelete = $this->makeResource('ContactResource');
+		$crDelete->setId($crCreate->getId());
+		$crDelete->retrieve();
+		$crDelete->setOptInSource(Resource::ACTION_BY_CONTACT);
+		$crDelete->delete(TRUE);
+
+		// Confirm the contact is marked as do-no-email
+		$crUpdate = $this->makeResource('ContactResource');
+		$crUpdate->setId($crCreate->getId());
+		$crUpdate->retrieve();
+		$this->assertEquals(ContactResource::STATUS_DONOTMAIL, $crUpdate->getStatus());
+
+		$crUpdate->addList(1);
+		try {
+			// By default, we shouldn't be able to take people off of the
+			// do-not-mail list.
+			$crUpdate->setOptInSource(Resource::ACTION_BY_CUSTOMER);
+			$crUpdate->update();
+			$this->fail('Update should have thrown an exception.');
+		}
+		catch (UnexpectedValueException $e) {
+			// But, if we set the OptInSource to ACTION_BY_CONTACT, we can
+			// override the default rules and remove a contact from the
+			// do-not-mail list.
+			$crUpdate->setOptInSource(Resource::ACTION_BY_CONTACT);
+			$crUpdate->update();
+
+			$crRetrieve = $this->makeResource('ContactResource');
+			$crRetrieve->setId($crCreate->getId());
+			$crRetrieve->retrieve();
+			$this->assertEquals(ContactResource::STATUS_ACTIVE, $crRetrieve->getStatus());
+		}
+	}
 }
+
+
+
+
+
+
+
+
+
