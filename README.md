@@ -36,6 +36,8 @@ The classes in the lib/resource directory represent the various resources provid
 Running the Tests
 -----------------
 
+You should only run the tests against a test Constant Contact account. The tests create a lot of users so they could use up your quota fairly quickly. In addition, when you sign up for a test account, use it to send your self a few emails before doing much else. Once you add more than 100 contacts (active or otherwise), you lose the ability to send email without paying.
+
 1. Copy tests/config.php.sample to tests/config.php and fill in the empty values.
 	- CC_API_KEY must be requested from the Constant Contact dashboard.
 	- CC_API_USERNAME and CC_API_PASSWORD are the username and password that you use to log into Constant Contact.
