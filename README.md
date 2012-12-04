@@ -3,18 +3,18 @@ Constant-Contact-API
 
 Object-oriented, resource-based interface to the Constant Contact REST API written for PHP 5.
 
-This library attempts to conform to the ReSTful resource semantics by providing classes to represent the various Constant Contact resource types as well as CRUD operations for each.
+This library attempts to conform to ReSTful resource semantics by providing classes to represent the various Constant Contact resource types as well as CRUD operations for each.
 
 Motivation
 ----------
-Constant Contact recommends a library that is very much influenced by PHP4. The library has very little documentation and covers up most of the errors from Constant Contact with generic messaging (or simply a true/false indicator of success). In fact, when attempting to use the Drupal module based on it (and written by the same company), it didn't seem to work at all. Rather than spend the time to debug a seemingly broken and outdated library without understanding the Constant Contact API, it made more sense to learn the API by creating a new library designed for PHP5.
+Constant Contact's recommended PHP library appears to be severely influenced by PHP4. Initial attempts to use it failed and limited documentation combined with a blatant lack of error output made debugging difficult. Rather than spend the time to debug an outdated and seemingly broken library, it made more sense to figure out the Constant Contact API by writing a new library.
 
 Getting Started
 ---------------
 
 You'll need a Constant Contact username, password, and API key. All can be gotten for free from the Constant Contact website (although after sixty days or 100 list members, your ability to send email will become severely limited).
 
-The tests generally provide clear example on how to execute basic actions like creating Contacts or Contact Lists.
+The tests generally provide clear examples on how to execute basic actions like creating Contacts or Contact Lists.
 
 ### Configuration
 Somewhere in your code, you'll need to define CC_API_KEY, CC_API_USERNAME, and CC_API_PASSWORD. See Running the Tests for more information on how to get these values.
