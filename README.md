@@ -5,6 +5,8 @@ Object-oriented, resource-based interface to the Constant Contact REST API writt
 
 This library attempts to conform to ReSTful resource semantics by providing classes to represent the various Constant Contact resource types as well as CRUD operations for each.
 
+Those resources implemented in lib/resource (activity, contact, contact_list) are adequately complete for most use cases however, this library does not implement all resources provided by the API.
+
 Motivation
 ----------
 Constant Contact's recommended PHP library appears to be severely influenced by PHP4. Initial attempts to use it failed and limited documentation combined with a blatant lack of error output made debugging difficult. Rather than spend the time to debug an outdated and seemingly broken library, it made more sense to figure out the Constant Contact API by writing a new library.
