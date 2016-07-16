@@ -1,5 +1,5 @@
-Constant-Contact-API
-====================
+Constant-Contact-API [![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
+================================================================================================================
 
 Object-oriented, resource-based interface to the Constant Contact REST API written for PHP 5.
 
